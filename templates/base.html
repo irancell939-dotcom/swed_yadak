@@ -60,7 +60,7 @@
             transition: all 0.3s ease;
             z-index: 1050;
             overflow-y: auto;
-            border-top-right-radius: 20px; /* گردی سمت راست (چون از چپ باز میشه) */
+            border-top-right-radius: 20px;
         }
 
         .sidebar.active {
@@ -82,7 +82,7 @@
         .sidebar-menu .nav-link {
             color: #555;
             padding: 12px 20px;
-            border-radius: 0 30px 30px 0; /* دکمه‌های گرد */
+            border-radius: 0 30px 30px 0;
             margin-bottom: 5px;
             font-weight: 500;
             transition: all 0.3s;
@@ -120,7 +120,7 @@
 
         /* محتوای اصلی */
         .main-content {
-            margin-left: 0; /* چون منو مخفیه */
+            margin-left: 0;
             transition: all 0.3s;
             min-height: 100vh;
         }
@@ -188,23 +188,16 @@
             <a class="nav-link" href="{{ url_for('invoice') }}"><i class="fas fa-file-invoice"></i>فاکتور جدید</a>
             <a class="nav-link" href="{{ url_for('invoices') }}"><i class="fas fa-list"></i>فاکتورها</a>
             <a class="nav-link" href="{{ url_for('reports') }}"><i class="fas fa-chart-line"></i>گزارش‌ها</a>
-            <a class="nav-link" href="{{ url_for('date_range_report') }}"><i class="fas fa-calendar-week"></i>گزارش بین دو تاریخ</a>
-            <a class="nav-link" href="{{ url_for('shop_expenses') }}"><i class="fas fa-receipt"></i>هزینه‌های مغازه</a>
-            <a class="nav-link" href="{{ url_for('stock_report') }}"><i class="fas fa-warehouse"></i>موجودی کالاها</a>
-            <a class="nav-link" href="{{ url_for('supplier_debts') }}"><i class="fas fa-hand-holding-usd"></i>بدهی به تامین‌کنندگان</a>
-            <a class="nav-link" href="{{ url_for('purchase_invoices_list') }}"><i class="fas fa-shopping-cart"></i>فاکتورهای خرید</a>
-            <a class="nav-link" href="{{ url_for('zakat_calculator') }}"><i class="fas fa-mosque"></i>زکات</a>
             <a class="nav-link" href="{{ url_for('debtors') }}"><i class="fas fa-user-minus"></i>بدهکاران</a>
             <a class="nav-link" href="{{ url_for('backup_page') }}"><i class="fas fa-database"></i>پشتیبان‌گیری</a>
-            
-            {% if session.role == 'admin' %}
-            <div class="dropdown-divider my-2"></div>
-            <a class="nav-link" href="{{ url_for('users_management') }}"><i class="fas fa-users-cog"></i>مدیریت کاربران</a>
-            {% endif %}
             
             <div class="dropdown-divider my-2"></div>
             <a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle"></i>درباره برنامه</a>
             <a class="nav-link text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i>خروج از سیستم</a>
+        </div>
+        {% else %}
+        <div class="sidebar-menu">
+            <a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i>ورود به سیستم</a>
         </div>
         {% endif %}
     </div>
