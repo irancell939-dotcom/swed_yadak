@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+{% if request.endpoint == 'invoice' %}
+    <h2>صدور فاکتور جدید</h2>
+
+    <form method="POST">
+        <p>
+            <label>انتخاب مشتری:</label><br>
+            <select name="customer_id" required style="width:100%; padding:6px;">
+                <option value="">-- انتخاب کنید --</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}">{{ c.name }} ({{ c.phone }})</option>
+                {% endfor %}
+            </select>
+        </p>
+
+        <h3>انتخاب کالاها</h3>
+        {% if products %}
+        {% for p in products %}
+        <div style="border:1px solid #ddd; padding:10px; margin:10px 0; border-radius:4px;">
+            <strong>{{ p.name }}</strong> (شناسه: {{ p.sku }})<br>
+            موجودی: {{ p.stock }} | قیمت فروش: {{ "{:,.0f}".format(p.sell_price) }} تومان<br>
+            <label>تعداد:</label>
+            <input type="number" name="quantity" min="0" max="{{ p.stock }}" value="0" style="width:80px; padding:4px;">
+            <input type="hidden" name="product_id" value="{{ p.id }}">
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>کالایی با موجودی کافی وجود ندارد.</p>
+        {% endif %}
+
+        <button type="submit" class="btn" style="margin-top:20px;">صدور فاکتور</button>
+    </form>
+
+{% else %}
+    <h2>لیست فاکتورها</h2>
+    {% if invoices %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>شماره فاکتور</th>
+                <th>مشتری</th>
+                <th>تاریخ</th>
+                <th>مبلغ کل (تومان)</th>
+                <th>سود (تومان)</th>
+                <th>وضعیت پرداخت</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.id }}</td>
+                <td>{{ inv.customer_name }}</td>
+                <td>{{ inv.date_jalali }}</td>
+                <td>{{ "{:,.0f}".format(inv.total_amount) }}</td>
+                <td>{{ "{:,.0f}".format(inv.total_profit) }}</td>
+                <td>
+                    {% if inv.paid >= inv.total_amount %}
+                        تسویه شده
+                    {% else %}
+                        پرداخت شده: {{ "{:,.0f}".format(inv.paid) }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>فاکتوری صادر نشده است.</p>
+    {% endif %}
+{% endif %}
+{% endblock %}
+<a href="{{ url_for('index') }}" class="btn btn-outline-secondary mt-3">بازگشت به صفحه اصلی</a>

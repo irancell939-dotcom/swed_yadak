@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}ویرایش کالا - سوئد یدک{% endblock %}
+{% block content %}
+<style>
+input[type="text"], input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+.card {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+</style>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i> ویرایش کالا</h5>
+            </div>
+            <div class="card-body">
+                <form id="editProductForm" method="POST" action="{{ url_for('update_product', product_id=product.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">نام کالا <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" value="{{ product.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">شناسه (SKU) - اختیاری</label>
+                        <input type="text" class="form-control" name="sku" value="{{ product.sku or '' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">قیمت خرید (تومان) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="purchasePrice" name="purchase_price"
+                                   value="{{ '{:,.0f}'.format(product.purchase_price) if product.purchase_price else '' }}"
+                                   placeholder="مثال: 1500000">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">قیمت فروش (تومان) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sellPrice" name="sell_price"
+                                   value="{{ '{:,.0f}'.format(product.sell_price) if product.sell_price else '' }}"
+                                   placeholder="مثال: 2000000">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">موجودی <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="stock" name="stock"
+                               value="{{ product.stock }}" placeholder="مثال: 10">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">توضیحات (اختیاری)</label>
+                        <textarea class="form-control" name="description" rows="3">{{ product.description or '' }}</textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('products') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-right me-1"></i> بازگشت
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> ذخیره تغییرات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function persianToLatinDigits(str) {
+    const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    const arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    let result = str;
+    for (let i = 0; i < 10; i++) {
+        result = result.replace(new RegExp(persian[i], 'g'), i);
+        result = result.replace(new RegExp(arabic[i], 'g'), i);
+    }
+    return result;
+}
+
+function setupNumberField(el) {
+    if (!el) return;
+    el.addEventListener('input', function() {
+        const startPos = this.selectionStart;
+        const endPos = this.selectionEnd;
+        // فقط ارقام و نقطه/ویرگول مجاز (اما برای قیمت، فقط عدد صحیح)
+        let clean = this.value.replace(/[^\d۰-۹٠-٩]/g, '');
+        clean = persianToLatinDigits(clean);
+        // جداکننده هزارگان برای نمایش
+        const num = parseInt(clean) || 0;
+        this.value = num.toLocaleString();
+        // بازگرداندن موقعیت کارس
+        this.setSelectionRange(startPos, endPos);
+    });
+}
+
+function validateForm() {
+    const purchase = document.getElementById('purchasePrice').value;
+    const sell = document.getElementById('sellPrice').value;
+    const stock = document.getElementById('stock').value;
+
+    const p = parseInt(purchase.replace(/,/g, ''));
+    const s = parseInt(sell.replace(/,/g, ''));
+    const st = parseInt(stock.replace(/,/g, ''));
+
+    if (isNaN(p) || p <= 0) {
+        alert('قیمت خرید را به درستی وارد کنید.');
+        return false;
+    }
+    if (isNaN(s) || s <= 0) {
+        alert('قیمت فروش را به درستی وارد کنید.');
+        return false;
+    }
+    if (isNaN(st) || st < 0) {
+        alert('موجودی باید عددی نامنفی باشد.');
+        return false;
+    }
+
+    // ذخیره مقدار عددی خام در فرم (بدون جداکننده)
+    document.querySelector('input[name="purchase_price"]').value = p;
+    document.querySelector('input[name="sell_price"]').value = s;
+    document.querySelector('input[name="stock"]').value = st;
+
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    ['purchasePrice', 'sellPrice', 'stock'].forEach(id => {
+        setupNumberField(document.getElementById(id));
+    });
+
+    document.getElementById('editProductForm').addEventListener('submit', function(e) {
+        if (!validateForm()) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

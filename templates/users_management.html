@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% block title %}مدیریت کاربران - سوئد یدک{% endblock %}
+{% block content %}
+<style>
+    .user-card {
+        transition: all 0.3s ease;
+    }
+    .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .role-badge {
+        font-size: 0.8rem;
+    }
+    .permission-category {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .permission-category-header {
+        background-color: #f8f9fa;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e9ecef;
+        font-weight: 600;
+    }
+    .permission-item {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .permission-item:last-child {
+        border-bottom: none;
+    }
+    .permission-checkbox {
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold">
+            <i class="fas fa-users me-2 text-primary"></i> مدیریت کاربران
+        </h1>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            <i class="fas fa-user-plus me-2"></i>افزودن کاربر جدید
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <i class="fas fa-list me-2"></i> لیست کاربران
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>نام کامل</th>
+                            <th>نام کاربری</th>
+                            <th>نقش</th>
+                            <th>وضعیت</th>
+                            <th>تاریخ ایجاد</th>
+                            <th>آخرین ورود</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.username }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                <span class="badge bg-danger role-badge">مدیر سیستم</span>
+                                {% else %}
+                                <span class="badge bg-primary role-badge">کاربر عادی</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">فعال</span>
+                                {% else %}
+                                <span class="badge bg-secondary">غیرفعال</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.created_date_jalali or '—' }}</td>
+                            <td>{{ user.last_login_jalali or '—' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary btn-edit-user" 
+                                            data-user-id="{{ user.id }}"
+                                            data-full-name="{{ user.full_name }}"
+                                            data-username="{{ user.username }}"
+                                            data-role="{{ user.role }}"
+                                            data-is-active="{{ user.is_active }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning btn-reset-password" 
+                                            data-user-id="{{ user.id }}"
+                                            data-full-name="{{ user.full_name }}">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    {% if user.id != session.user_id %}
+                                    <button class="btn btn-outline-danger btn-delete-user" 
+                                            data-user-id="{{ user.id }}"
+                                            data-full-name="{{ user.full_name }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال افزودن کاربر -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">افزودن کاربر جدید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">نام کامل <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">نام کاربری <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">رمز عبور <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">نقش <span class="text-danger">*</span></label>
+                        <select class="form-select" id="role" name="role" required>
+                            <option value="user">کاربر عادی</option>
+                            <option value="admin">مدیر سیستم</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="permissions" class="form-label">سطح دسترسی</label>
+                        <textarea class="form-control" id="permissions" name="permissions" rows="3" 
+                                  placeholder="سطوح دسترسی را با کاما جدا کنید (اختیاری)"></textarea>
+                        <div class="form-text">مثال: products.view,invoices.create,reports.view</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="btn-add-user">افزودن کاربر</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ویرایش کاربر -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ویرایش کاربر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_full_name" class="form-label">نام کامل <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_full_name" name="full_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_username" class="form-label">نام کاربری <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_username" name="username" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_role" class="form-label">نقش <span class="text-danger">*</span></label>
+                                <select class="form-select" id="edit_role" name="role" required>
+                                    <option value="user">کاربر عادی</option>
+                                    <option value="admin">مدیر سیستم</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check pt-4">
+                                <input type="checkbox" class="form-check-input" id="edit_is_active" name="is_active" value="1">
+                                <label class="form-check-label fw-bold" for="edit_is_active">کاربر فعال</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">سطوح دسترسی</label>
+                        <div class="form-text mb-3">لطفاً دسترسی‌های مورد نیاز کاربر را انتخاب کنید:</div>
+                        
+                        <div id="permissionsContainer">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                </div>
+                                <div class="mt-2">در حال بارگذاری سطوح دسترسی...</div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="btn-edit-user">ذخیره تغییرات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال بازنشانی رمز عبور -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">بازنشانی رمز عبور</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="resetPasswordForm">
+                    <input type="hidden" id="reset_user_id" name="user_id">
+                    <p>در حال بازنشانی رمز عبور برای کاربر: <strong id="reset_user_name"></strong></p>
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">رمز عبور جدید</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-warning" id="btn-reset-password">بازنشانی رمز</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // افزودن کاربر جدید
+    $('#btn-add-user').click(function() {
+        const formData = $('#addUserForm').serialize();
+        
+        $.ajax({
+            url: '/users/add',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#addUserModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('خطا: ' + response.error);
+                }
+            }
+        });
+    });
+
+    // ویرایش کاربر
+    $('.btn-edit-user').click(function() {
+        const userId = $(this).data('user-id');
+        const fullName = $(this).data('full-name');
+        const username = $(this).data('username');
+        const role = $(this).data('role');
+        const isActive = $(this).data('is-active');
+        
+        $('#edit_user_id').val(userId);
+        $('#edit_full_name').val(fullName);
+        $('#edit_username').val(username);
+        $('#edit_role').val(role);
+        $('#edit_is_active').prop('checked', isActive == 1);
+        
+        // بارگذاری سطوح دسترسی
+        loadPermissionsForUser(userId);
+        
+        $('#editUserModal').modal('show');
+    });
+
+    function loadPermissionsForUser(userId) {
+        $('#permissionsContainer').html(`
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
+                <div class="mt-2">در حال بارگذاری سطوح دسترسی...</div>
+            </div>
+        `);
+        
+        // دریافت سطوح دسترسی تعریف شده
+        $.get('/api/permissions_master', function(permissionsMaster) {
+            // دریافت سطوح دسترسی کاربر
+            $.get('/api/user_permissions/' + userId, function(userPermissions) {
+                renderPermissionsForm(permissionsMaster, userPermissions.permissions);
+            }).fail(function() {
+                alert('خطا در دریافت سطوح دسترسی کاربر');
+            });
+        }).fail(function() {
+            alert('خطا در دریافت لیست دسترسی‌ها');
+        });
+    }
+
+    function renderPermissionsForm(permissionsMaster, userPermissions) {
+        let html = '';
+        const categories = {};
+        
+        // گروه‌بندی دسترسی‌ها بر اساس دسته
+        permissionsMaster.forEach(perm => {
+            if (!categories[perm.category]) {
+                categories[perm.category] = [];
+            }
+            categories[perm.category].push(perm);
+        });
+        
+        // ایجاد فرم دسترسی‌ها
+        for (const [category, perms] of Object.entries(categories)) {
+            html += `
+                <div class="permission-category">
+                    <div class="permission-category-header">
+                        ${category}
+                    </div>
+                    <div class="permission-category-body">
+            `;
+            
+            perms.forEach(perm => {
+                const isChecked = userPermissions.includes(perm.permission_key);
+                html += `
+                    <div class="permission-item">
+                        <div class="form-check">
+                            <input class="form-check-input permission-checkbox" 
+                                   type="checkbox" 
+                                   value="${perm.permission_key}" 
+                                   id="perm_${perm.permission_key}"
+                                   ${isChecked ? 'checked' : ''}>
+                            <label class="form-check-label" for="perm_${perm.permission_key}">
+                                ${perm.permission_name}
+                            </label>
+                            ${perm.description ? `<small class="form-text text-muted d-block">${perm.description}</small>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        $('#permissionsContainer').html(html);
+    }
+
+    $('#btn-edit-user').click(function() {
+        const userId = $('#edit_user_id').val();
+        const formData = $('#editUserForm').serialize();
+        
+        // جمع‌آوری سطوح دسترسی انتخاب شده
+        const selectedPermissions = [];
+        $('.permission-checkbox:checked').each(function() {
+            selectedPermissions.push($(this).val());
+        });
+        
+        const data = formData + '&permissions=' + selectedPermissions.join(',');
+        
+        $.ajax({
+            url: '/users/' + userId + '/edit',
+            method: 'POST',
+            data: data,
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#editUserModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('خطا: ' + response.error);
+                }
+            }
+        });
+    });
+
+    // بازنشانی رمز عبور
+    $('.btn-reset-password').click(function() {
+        const userId = $(this).data('user-id');
+        const fullName = $(this).data('full-name');
+        
+        $('#reset_user_id').val(userId);
+        $('#reset_user_name').text(fullName);
+        $('#resetPasswordModal').modal('show');
+    });
+
+    $('#btn-reset-password').click(function() {
+        const userId = $('#reset_user_id').val();
+        const newPassword = $('#new_password').val();
+        
+        $.ajax({
+            url: '/users/' + userId + '/reset_password',
+            method: 'POST',
+            data: { new_password: newPassword },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#resetPasswordModal').modal('hide');
+                } else {
+                    alert('خطا: ' + response.error);
+                }
+            }
+        });
+    });
+
+    // حذف کاربر
+    $('.btn-delete-user').click(function() {
+        const userId = $(this).data('user-id');
+        const fullName = $(this).data('full-name');
+        
+        if (confirm(`آیا از حذف کاربر "${fullName}" اطمینان دارید؟`)) {
+            $.ajax({
+                url: '/users/' + userId + '/delete',
+                method: 'POST',
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        location.reload();
+                    } else {
+                        alert('خطا: ' + response.error);
+                    }
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

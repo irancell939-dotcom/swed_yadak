@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block title %}لیست فاکتورهای خرید - سوئد یدک{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    لیست فاکتورهای خرید
+                </h5>
+                <div>
+                    <a href="{{ url_for('purchase_lists') }}" class="btn btn-light btn-sm me-2">
+                        <i class="fas fa-list me-1"></i> لیست‌های خرید
+                    </a>
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
+                        <i class="fas fa-plus me-1"></i> فاکتور خرید جدید
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if purchase_invoices %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>تامین کننده</th>
+                                <th>تاریخ فاکتور</th>
+                                <th>مبلغ کل</th>
+                                <th>پرداخت شده</th>
+                                <th>باقیمانده</th>
+                                <th>وضعیت</th>
+                                <th>تعداد کالاها</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in purchase_invoices %}
+                            <tr>
+                                <td>{{ invoice.id }}</td>
+                                <td>{{ invoice.supplier_name }}</td>
+                                <td>{{ invoice.invoice_date_jalali }}</td>
+                                <td>{{ "{:,.0f}".format(invoice.total_amount or 0) }} تومان</td>
+                                <td>{{ "{:,.0f}".format(invoice.paid_amount or 0) }} تومان</td>
+                                <td>
+                                    <span class="{{ 'text-danger' if invoice.remaining_amount > 0 else 'text-success' }}">
+                                        {{ "{:,.0f}".format(invoice.remaining_amount or 0) }} تومان
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if invoice.status == 'paid' %}
+                                        <span class="badge bg-success">پرداخت شده</span>
+                                    {% elif invoice.status == 'pending' %}
+                                        <span class="badge bg-warning">در انتظار پرداخت</span>
+                                    {% elif invoice.status == 'cancelled' %}
+                                        <span class="badge bg-danger">لغو شده</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ invoice.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ invoice.item_count or 0 }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('purchase_invoice_detail', invoice_id=invoice.id) }}" 
+                                           class="btn btn-outline-primary" title="مشاهده">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_purchase_invoice', invoice_id=invoice.id) }}" 
+                                           class="btn btn-outline-warning" title="ویرایش">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('print_purchase_invoice', invoice_id=invoice.id) }}" 
+                                           class="btn btn-outline-info" title="چاپ" target="_blank">
+                                            <i class="fas fa-print"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger btn-delete-invoice" 
+                                                data-invoice-id="{{ invoice.id }}"
+                                                data-supplier-name="{{ invoice.supplier_name }}"
+                                                title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">هیچ فاکتور خریدی یافت نشد</h5>
+                    <p class="text-muted">برای ایجاد فاکتور خرید جدید روی دکمه زیر کلیک کنید</p>
+                    <button class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#createInvoiceModal">
+                        <i class="fas fa-plus me-2"></i> ایجاد فاکتور خرید جدید
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ایجاد فاکتور خرید جدید -->
+<div class="modal fade" id="createInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">ایجاد فاکتور خرید جدید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createInvoiceForm">
+                    <div class="mb-3">
+                        <label class="form-label">انتخاب لیست خرید <span class="text-danger">*</span></label>
+                        <select class="form-select" id="purchaseListSelect" name="purchase_list_id" required>
+                            <option value="">-- انتخاب لیست خرید --</option>
+                            <!-- لیست‌های خرید از طریق AJAX پر می‌شوند -->
+                        </select>
+                        <div class="form-text">ابتدا باید یک لیست خرید ایجاد کنید</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">تامین کننده <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="supplierNameInput" name="supplier_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">توضیحات</label>
+                        <textarea class="form-control" id="invoiceNotesInput" name="notes" rows="3" placeholder="توضیحات اضافی..."></textarea>
+                    </div>
+                </form>
+                <div id="purchaseListInfo" class="alert alert-info mt-3" style="display: none;">
+                    <h6>اطلاعات لیست خرید انتخاب شده:</h6>
+                    <div id="listDetails"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <a href="{{ url_for('purchase_lists') }}" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-list me-1"></i> مدیریت لیست‌های خرید
+                </a>
+                <button type="button" class="btn btn-success" id="createInvoiceBtn">
+                    <i class="fas fa-plus me-1"></i> ایجاد فاکتور
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // بارگذاری لیست‌های خرید هنگام باز شدن مودال
+    $('#createInvoiceModal').on('show.bs.modal', function() {
+        loadPurchaseLists();
+    });
+
+    // بارگذاری لیست‌های خرید
+    function loadPurchaseLists() {
+        $.ajax({
+            url: '/api/active_purchase_lists',
+            method: 'GET',
+            success: function(lists) {
+                const $select = $('#purchaseListSelect');
+                $select.empty();
+                $select.append('<option value="">-- انتخاب لیست خرید --</option>');
+                
+                if (lists.length === 0) {
+                    $select.append('<option value="" disabled>لیست خرید فعالی وجود ندارد</option>');
+                } else {
+                    lists.forEach(list => {
+                        $select.append(`
+                            <option value="${list.id}" data-supplier="${list.supplier_name}" data-items="${list.item_count}" data-total="${list.total_estimated || 0}">
+                                ${list.supplier_name} - ${list.item_count} کالا - ${(list.total_estimated || 0).toLocaleString('fa-IR')} تومان
+                            </option>
+                        `);
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('خطا در بارگذاری لیست‌های خرید:', error);
+            }
+        });
+    }
+
+    // نمایش اطلاعات لیست خرید انتخاب شده
+    $('#purchaseListSelect').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        const supplierName = selectedOption.data('supplier');
+        const itemCount = selectedOption.data('items');
+        const totalAmount = selectedOption.data('total');
+        
+        if (supplierName) {
+            $('#supplierNameInput').val(supplierName);
+            $('#purchaseListInfo').show();
+            $('#listDetails').html(`
+                <p><strong>تامین کننده:</strong> ${supplierName}</p>
+                <p><strong>تعداد کالاها:</strong> ${itemCount} عدد</p>
+                <p><strong>مبلغ تخمینی:</strong> ${(totalAmount || 0).toLocaleString('fa-IR')} تومان</p>
+            `);
+        } else {
+            $('#supplierNameInput').val('');
+            $('#purchaseListInfo').hide();
+        }
+    });
+
+    // ایجاد فاکتور خرید جدید
+    $('#createInvoiceBtn').click(function() {
+        const purchaseListId = $('#purchaseListSelect').val();
+        const supplierName = $('#supplierNameInput').val().trim();
+        const notes = $('#invoiceNotesInput').val().trim();
+        
+        if (!purchaseListId) {
+            showAlert('لطفاً یک لیست خرید انتخاب کنید', 'danger');
+            return;
+        }
+        
+        if (!supplierName) {
+            showAlert('لطفاً نام تامین کننده را وارد کنید', 'danger');
+            return;
+        }
+        
+        const $btn = $(this);
+        $btn.prop('disabled', true);
+        $btn.html('<i class="fas fa-spinner fa-spin me-1"></i> در حال ایجاد...');
+        
+        const formData = new FormData();
+        formData.append('purchase_list_id', purchaseListId);
+        formData.append('supplier_name', supplierName);
+        formData.append('notes', notes);
+        
+        $.ajax({
+            url: '/api/create_purchase_invoice',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('فاکتور خرید با موفقیت ایجاد شد', 'success');
+                    $('#createInvoiceModal').modal('hide');
+                    // ریدایرکت به صفحه ویرایش فاکتور جدید
+                    setTimeout(() => {
+                        window.location.href = `/purchase_invoice/${response.invoice_id}/edit`;
+                    }, 1500);
+                } else {
+                    showAlert('خطا: ' + response.error, 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                showAlert('خطا در ارتباط با سرور', 'danger');
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+                $btn.html('<i class="fas fa-plus me-1"></i> ایجاد فاکتور');
+            }
+        });
+    });
+
+    // حذف فاکتور خرید
+    $('.btn-delete-invoice').click(function() {
+        const invoiceId = $(this).data('invoice-id');
+        const supplierName = $(this).data('supplier-name');
+        
+        if (confirm(`آیا از حذف فاکتور خرید "${supplierName}" اطمینان دارید؟`)) {
+            $.ajax({
+                url: `/purchase_invoice/${invoiceId}/delete`,
+                method: 'POST',
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('فاکتور خرید با موفقیت حذف شد', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showAlert('خطا: ' + response.error, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showAlert('خطا در ارتباط با سرور', 'danger');
+                }
+            });
+        }
+    });
+
+    // تابع نمایش پیام
+    function showAlert(message, type) {
+        $('.alert-dismissible').alert('close');
+        
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('body').append(alertHtml);
+        
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

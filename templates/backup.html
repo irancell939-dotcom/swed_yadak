@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}پشتیبان‌گیری - سوئد یدک{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-database me-2"></i> مدیریت پشتیبان‌گیری و کپی روی فلش</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <p><strong>نکته مهم:</strong> این سیستم چندین روش برای پشتیبان‌گیری ارائه می‌دهد:</p>
+                    <ol>
+                        <li><strong>پشتیبان دیتابیس:</strong> فقط اطلاعات فروشگاه (کالاها، فاکتورها و ...)</li>
+                        <li><strong>پشتیبان کامل:</strong> تمام فایل‌ها و پوشه‌های برنامه</li>
+                        <li><strong>کپی روی فلش:</strong> کپی خودکار تمام فایل‌های برنامه روی فلش مموری</li>
+                    </ol>
+                </div>
+                
+                <!-- کپی خودکار روی فلش مموری -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-robot me-2"></i> کپی خودکار روی فلش</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-success">
+                            <p><strong>ویژگی جدید:</strong> این گزینه به طور خودکار <strong>تمامی فایل‌های برنامه</strong> از جمله فایل اجرایی اصلی را روی فلش کپی می‌کند.</p>
+                            <p class="mb-0"><i class="fas fa-info-circle me-1"></i> فایل اصلی اجرا: <code>{{ config['MAIN_EXECUTABLE'] if config.get('MAIN_EXECUTABLE') else 'app16 - Copy.py' }}</code></p>
+                        </div>
+                        
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <form method="POST" action="{{ url_for('auto_copy_to_flash_route') }}">
+                                    <button type="submit" class="btn btn-success btn-lg w-100">
+                                        <i class="fas fa-bolt me-2"></i> کپی خودکار
+                                    </button>
+                                    <small class="text-muted d-block mt-1">کپی تمام فایل‌ها به طور خودکار</small>
+                                </form>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <form method="POST" action="{{ url_for('copy_to_flash') }}">
+                                    <button type="submit" class="btn btn-info btn-lg w-100">
+                                        <i class="fas fa-copy me-2"></i> کپی دستی
+                                    </button>
+                                    <small class="text-muted d-block mt-1">کپی تمام فایل‌های برنامه</small>
+                                </form>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <form method="POST" action="{{ url_for('copy_database_to_flash') }}">
+                                    <button type="submit" class="btn btn-outline-info btn-lg w-100">
+                                        <i class="fas fa-database me-2"></i> فقط دیتابیس
+                                    </button>
+                                    <small class="text-muted d-block mt-1">فقط فایل دیتابیس</small>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- پشتیبان دیتابیس -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-file-database me-2"></i> پشتیبان دیتابیس</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>فقط اطلاعات فروشگاه را ذخیره می‌کند (حجم کمتر، سریع‌تر).</p>
+                        <form method="POST" action="{{ url_for('do_backup') }}" class="text-center">
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save me-2"></i> ایجاد پشتیبان دیتابیس
+                            </button>
+                        </form>
+                        
+                        {% if backup_files_db %}
+                        <hr>
+                        <h6>فایل‌های پشتیبان دیتابیس موجود:</h6>
+                        <div class="list-group">
+                            {% for file in backup_files_db %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ file.name }}</span>
+                                <span class="text-muted">{{ file.size }} KB</span>
+                                <a href="{{ url_for('download_backup', filename=file.name) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- پشتیبان کامل -->
+                <div class="card mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-copy me-2"></i> پشتیبان کامل سیستم</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>تمام فایل‌ها و پوشه‌های برنامه را برای نصب روی فلش یا کامپیوتر دیگر ذخیره می‌کند.</p>
+                        <div class="alert alert-warning">
+                            <p><strong>هشدار:</strong> این عملیات ممکن است چند دقیقه طول بکشد و فایل نهایی حجم زیادی داشته باشد.</p>
+                        </div>
+                        <form method="POST" action="{{ url_for('do_full_backup') }}" class="text-center">
+                            <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('آیا مطمئن هستید؟ این عملیات ممکن است چند دقیقه طول بکشد.')">
+                                <i class="fas fa-hard-drive me-2"></i> ایجاد پشتیبان کامل
+                            </button>
+                        </form>
+                        
+                        {% if backup_files_full %}
+                        <hr>
+                        <h6>فایل‌های پشتیبان کامل موجود:</h6>
+                        <div class="list-group">
+                            {% for file in backup_files_full %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ file.name }}</span>
+                                <span class="text-muted">{{ file.size }} MB</span>
+                                <a href="{{ url_for('download_backup', filename=file.name) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- نمایش وضعیت فلش‌های متصل -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-usb-drive me-2"></i> وضعیت فلش‌های مموری</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-secondary">
+                            <p><strong>اطلاعات:</strong> لیست فلش‌های مموری متصل به سیستم به طور خودکار به‌روزرسانی می‌شود.</p>
+                        </div>
+                        
+                        <h6>فلش‌های مموری متصل:</h6>
+                        <div id="flash-drives-list" class="list-group mb-3">
+                            <div class="list-group-item text-center text-muted">
+                                <i class="fas fa-sync fa-spin me-2"></i>
+                                در حال دریافت اطلاعات...
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button onclick="updateFlashDrivesList()" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-sync me-1"></i> به‌روزرسانی
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{{ url_for('index') }}" class="btn btn-outline-secondary mt-3">
+    <i class="fas fa-arrow-right me-1"></i> بازگشت به صفحه اصلی
+</a>
+
+<script>
+// تابع برای به روزرسانی لیست فلش‌های مموری
+function updateFlashDrivesList() {
+    const container = document.getElementById('flash-drives-list');
+    container.innerHTML = `
+        <div class="list-group-item text-center text-muted">
+            <i class="fas fa-sync fa-spin me-2"></i>
+            در حال دریافت اطلاعات...
+        </div>
+    `;
+    
+    fetch('/api/flash_drives')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.flash_drives.length > 0) {
+                let html = '';
+                data.flash_drives.forEach((drive, index) => {
+                    html += `
+                        <div class="list-group-item ${index === 0 ? 'list-group-item-success' : ''}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-usb-drive me-2"></i>
+                                    <strong>${drive.device}</strong>
+                                    <small class="text-muted ms-2">(${drive.mountpoint})</small>
+                                    ${index === 0 ? '<span class="badge bg-primary ms-2">اولویت</span>' : ''}
+                                </div>
+                                <div>
+                                    <span class="badge bg-success">${drive.free_space_gb} GB آزاد</span>
+                                    <span class="badge bg-secondary ms-1">${drive.total_size_gb} GB کل</span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-hdd me-1"></i> فایل سیستم: ${drive.file_system} | 
+                                    <i class="fas fa-microchip me-1"></i> فضای آزاد: ${drive.free_space_mb} MB
+                                </small>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `
+                    <div class="list-group-item text-center text-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        هیچ فلش مموری متصل یافت نشد. لطفاً فلش را وصل کنید.
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            container.innerHTML = `
+                <div class="list-group-item text-center text-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    خطا در دریافت اطلاعات فلش‌ها
+                </div>
+            `;
+        });
+}
+
+// به روزرسانی اولیه و هر 15 ثانیه یکبار
+document.addEventListener('DOMContentLoaded', function() {
+    updateFlashDrivesList();
+    setInterval(updateFlashDrivesList, 15000);
+});
+</script>
+
+{% endblock %}

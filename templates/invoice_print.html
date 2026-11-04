@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>پرینت فاکتور #{{ invoice.id }}</title>
+    <style>
+        body { font-family: Tahoma, Arial, sans-serif; margin: 20px; }
+        .invoice { max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 0; color: #e63946; }
+        .table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .table th, .table td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .footer { margin-top: 30px; text-align: center; font-size: 0.9em; }
+        .close-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 8px 16px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .close-btn:hover {
+            background-color: #c82333;
+        }
+        @media print {
+            .close-btn { display: none; }
+            body { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <button class="close-btn" onclick="window.close()">✕ بستن</button>
+    
+    <div class="invoice">
+        <div class="header">
+            <h2>فاکتور فروش</h2>
+            <p>فروشگاه سوئد یدک - لوازم یدکی اسکانیا</p>
+            <p>شماره فاکتور: #{{ invoice.id }} | تاریخ: {{ invoice.date_jalali }}</p>
+        </div>
+        
+        <p><strong>مشتری:</strong> {{ invoice.customer_name }}</p>
+        <p><strong>تلفن:</strong> {{ invoice.customer_phone }}</p>
+        
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ردیف</th>
+                    <th>نام کالا</th>
+                    <th>تعداد</th>
+                    <th>قیمت واحد</th>
+                    <th>جمع</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ item.product_name }} {% if item.sku %}({{ item.sku }}){% endif %}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ "{:,.0f}".format(item.unit_price) }}</td>
+                    <td>{{ "{:,.0f}".format(item.quantity * item.unit_price) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4">جمع کل قبل از تخفیف:</th>
+                    <th>{{ "{:,.0f}".format(invoice.total_amount + invoice.discount_amount) }}</th>
+                </tr>
+                {% if invoice.discount_amount > 0 %}
+                <tr>
+                    <th colspan="4">تخفیف:</th>
+                    <th>-{{ "{:,.0f}".format(invoice.discount_amount) }}</th>
+                </tr>
+                {% endif %}
+                <tr>
+                    <th colspan="4">مبلغ نهایی:</th>
+                    <th>{{ "{:,.0f}".format(invoice.total_amount) }}</th>
+                </tr>
+            </tfoot>
+        </table>
+        
+        {% if payments %}
+        <h4>پرداخت‌ها</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>تاریخ و ساعت</th>
+                    <th>مبلغ</th>
+                    <th>توضیحات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>{{ payment.payment_date_jalali }}</td>
+                    <td>{{ "{:,.0f}".format(payment.amount) }}</td>
+                    <td>{{ payment.description or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th>جمع پرداختی:</th>
+                    <th>{{ "{:,.0f}".format(payments | sum(attribute='amount')) }}</th>
+                    <th></th>
+                </tr>
+                <tr>
+                    <th>باقیمانده:</th>
+                    <th>{{ "{:,.0f}".format(invoice.total_amount - (payments | sum(attribute='amount'))) }}</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+        {% endif %}
+        
+        <div class="footer">
+            <p>تماس: 09378547740 - 09155413359</p>
+            <p>طراحی شده توسط محمد عمر خاوران</p>
+            <button class="no-print" onclick="window.print()">پرینت</button>
+        </div>
+    </div>
+</body>
+</html>
