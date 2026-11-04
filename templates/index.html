@@ -1,167 +1,125 @@
 {% extends "base.html" %}
 {% block title %}خانه - سوئد یدک{% endblock %}
 {% block content %}
-<div class="container py-4" dir="rtl">
+<div class="container py-3" dir="rtl">
+    
     <!-- هدر خوش‌آمدگویی -->
-    <div class="row mb-5">
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="card bg-gradient-primary text-white">
+            <div class="card text-white" style="background: linear-gradient(135deg, #1d3557 0%, #e63946 100%); border-radius: 20px;">
                 <div class="card-body text-center py-5">
                     <h1 class="display-4 fw-bold mb-3">
                         <i class="fas fa-truck-moving me-3"></i>سوئد یدک
                     </h1>
-                    <p class="lead mb-4">سیستم جامع مدیریت فروشگاه لوازم یدکی اسکانیا</p>
-                    <div class="row justify-content-center">
-                        <div class="col-md-8">
-                            <div class="row text-center">
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-box-open fa-2x mb-2"></i>
-                                        <h5>مدیریت کالاها</h5>
-                                        <p class="mb-0">مدیریت کامل موجودی و قیمت‌ها</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-file-invoice-dollar fa-2x mb-2"></i>
-                                        <h5>صدور فاکتور</h5>
-                                        <p class="mb-0">سیستم سریع و هوشمند فاکتورنویسی</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                        <h5>گزارش‌گیری</h5>
-                                        <p class="mb-0">تحلیل کامل عملکرد فروشگاه</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="lead mb-0 opacity-75">سیستم جامع مدیریت فروشگاه لوازم یدکی اسکانیا</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- آمار سریع -->
+    <!-- آمار سریع (کارت‌های رنگی) -->
     <div class="row mb-5">
-        <div class="col-12">
-            <h3 class="fw-bold mb-4 text-center">
-                <i class="fas fa-tachometer-alt me-2 text-primary"></i>آمار سریع سیستم
-            </h3>
-        </div>
         <div class="col-md-3 mb-3">
-            <div class="card stat-card border-primary">
+            <div class="card stat-card" style="border-right: 5px solid #457b9d; background: #fff;">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <i class="fas fa-boxes fa-2x text-primary"></i>
+                        <i class="fas fa-boxes fa-2x" style="color: #457b9d;"></i>
                     </div>
-                    <h5 class="card-title">تعداد کالاها</h5>
-                    <p class="display-6 text-primary mb-0" id="productsCount">0</p>
-                    <small class="text-muted">کالای فعال در سیستم</small>
+                    <h5 class="card-title fw-bold">تعداد کالاها</h5>
+                    <p class="display-6 fw-bold mb-0" style="color: #457b9d;" id="productsCount">0</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card stat-card border-success">
+            <div class="card stat-card" style="border-right: 5px solid #2a9d8f; background: #fff;">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <i class="fas fa-file-invoice fa-2x text-success"></i>
+                        <i class="fas fa-file-invoice fa-2x" style="color: #2a9d8f;"></i>
                     </div>
-                    <h5 class="card-title">فاکتورهای امروز</h5>
-                    <p class="display-6 text-success mb-0" id="todayInvoices">0</p>
-                    <small class="text-muted">فاکتور صادر شده امروز</small>
+                    <h5 class="card-title fw-bold">فاکتورهای امروز</h5>
+                    <p class="display-6 fw-bold mb-0" style="color: #2a9d8f;" id="todayInvoices">0</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card stat-card border-warning">
+            <div class="card stat-card" style="border-right: 5px solid #e9c46a; background: #fff;">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        <i class="fas fa-exclamation-triangle fa-2x" style="color: #e9c46a;"></i>
                     </div>
-                    <h5 class="card-title">کالاهای اتمام موجودی</h5>
-                    <p class="display-6 text-warning mb-0" id="outOfStockCount">0</p>
-                    <small class="text-muted">نیاز به سفارش فوری</small>
+                    <h5 class="card-title fw-bold">اتمام موجودی</h5>
+                    <p class="display-6 fw-bold mb-0" style="color: #e9c46a;" id="outOfStockCount">0</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card stat-card border-danger">
+            <div class="card stat-card" style="border-right: 5px solid #e63946; background: #fff;">
                 <div class="card-body text-center">
                     <div class="mb-3">
-                        <i class="fas fa-user-minus fa-2x text-danger"></i>
+                        <i class="fas fa-user-minus fa-2x" style="color: #e63946;"></i>
                     </div>
-                    <h5 class="card-title">مشتریان بدهکار</h5>
-                    <p class="display-6 text-danger mb-0">{{ debtors_count or 0 }}</p>
-                    <small class="text-muted">تسویه نشده</small>
+                    <h5 class="card-title fw-bold">بدهکاران</h5>
+                    <p class="display-6 fw-bold mb-0" style="color: #e63946;">{{ debtors_count or 0 }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- کارت‌های اصلی -->
+    <!-- کارت‌های اصلی منو (با دکمه‌های رنگی) -->
+    <h3 class="fw-bold mb-4 text-center text-muted"><i class="fas fa-th-large me-2"></i>دسترسی سریع</h3>
     <div class="row g-4">
-        {% set debtors_text = 'لیست مشتریان تسویه‌نشده (' ~ (debtors_count or 0) ~ ' نفر)' %}
+        {% set debtors_text = 'مشاهده ' ~ (debtors_count or 0) ~ ' مشتری بدهکار' %}
         {% set cards = [
-            {'icon':'fas fa-boxes','color':'#1d3557','title':'مدیریت کالاها','text':'افزودن، ویرایش و جستجوی لوازم یدکی اسکانیا','url':url_for('products'),'btn':'ورود','btn_color':'primary'},
-            {'icon':'fas fa-file-invoice','color':'#e63946','title':'صدور فاکتور','text':'ثبت فاکتور جدید با جستجوی هوشمند کالا','url':url_for('invoice'),'btn':'صدور فاکتور','btn_color':'danger'},
-            {'icon':'fas fa-list','color':'#f4a261','title':'لیست فاکتورها','text':'مشاهده و پیگیری فاکتورهای صادر شده','url':url_for('invoices'),'btn':'لیست فاکتورها','btn_color':'warning'},
-            {'icon':'fas fa-chart-line','color':'#2a9d8f','title':'گزارش‌های مالی','text':'سود، فروش و عملکرد روزانه/ماهانه','url':url_for('reports'),'btn':'مشاهده','btn_color':'success'},
-            {'icon':'fas fa-calendar-alt','color':'#6f42c1','title':'گزارش بین دو تاریخ','text':'گزارش فروش در بازه زمانی مشخص','url':url_for('date_range_report'),'btn':'مشاهده','btn_color':'primary'},
-            {'icon':'fas fa-receipt','color':'#8e44ad','title':'هزینه‌های مغازه','text':'ثبت و مدیریت هزینه‌های روزانه مغازه','url':url_for('shop_expenses'),'btn':'مدیریت','btn_color':'info'},
-            {'icon':'fas fa-warehouse','color':'#8e44ad','title':'موجودی کالاها','text':'بررسی موجودی و کالاهای رو به اتمام','url':url_for('stock_report'),'btn':'مشاهده','btn_color':'info'},
-            {'icon':'fas fa-shopping-cart','color':'#17a2b8','title':'فاکتورهای خرید','text':'مدیریت خریدها از تامین‌کنندگان','url':url_for('purchase_invoices_list'),'btn':'مشاهده','btn_color':'info'},
-            {'icon':'fas fa-hand-holding-usd','color':'#6f42c1','title':'بدهی به تامین‌کنندگان','text':'پیگیری بدهی‌های پرداخت نشده','url':url_for('supplier_debts'),'btn':'مشاهده','btn_color':'primary'},
-            {'icon':'fas fa-mosque','color':'#e74c3c','title':'محاسبه زکات','text':'محاسبه ۲.۵٪ از ارزش کالاهای موجود','url':url_for('zakat_calculator'),'btn':'محاسبه','btn_color':'warning'},
-            {'icon':'fas fa-user-minus','color':'#c0392b','title':'بدهکاران','text': debtors_text,'url':url_for('debtors'),'btn':'مشاهده','btn_color':'danger'},
-            {'icon':'fas fa-file-import','color':'#264653','title':'وارد کردن از اکسل','text':'بارگذاری دسته‌ای کالاها از فایل Excel','url':url_for('products') ~ "#upload",'btn':'آپلود','btn_color':'info'},
-            {'icon':'fas fa-database','color':'#8e44ad','title':'پشتیبان‌گیری','text':'ذخیره و بازیابی اطلاعات فروشگاه','url':url_for('backup_page'),'btn':'مدیریت','btn_color':'secondary'},
-            {'icon':'fas fa-users-cog','color':'#2c3e50','title':'مدیریت کاربران','text':'مدیریت دسترسی کاربران سیستم','url':url_for('users_management'),'btn':'مدیریت','btn_color':'dark'},
-            {'icon':'fas fa-info-circle','color':'#16a085','title':'درباره برنامه','text':'اطلاعات فنی و راهنمای استفاده','url':url_for('about'),'btn':'مشاهده','btn_color':'success'}
+            {'icon':'fas fa-boxes','color':'#457b9d','title':'مدیریت کالاها','text':'افزودن، ویرایش و جستجوی قطعات','url':url_for('products'),'btn':'ورود به کالاها','btn_color':'primary'},
+            {'icon':'fas fa-file-invoice','color':'#e63946','title':'صدور فاکتور','text':'ثبت فاکتور جدید با جستجوی هوشمند','url':url_for('invoice'),'btn':'صدور فاکتور','btn_color':'danger'},
+            {'icon':'fas fa-list','color':'#f4a261','title':'لیست فاکتورها','text':'مشاهده و پیگیری فاکتورهای صادر شده','url':url_for('invoices'),'btn':'مشاهده لیست','btn_color':'warning'},
+            {'icon':'fas fa-chart-line','color':'#2a9d8f','title':'گزارش‌های مالی','text':'سود، فروش و عملکرد فروشگاه','url':url_for('reports'),'btn':'مشاهده گزارش','btn_color':'success'},
+            {'icon':'fas fa-calendar-alt','color':'#6f42c1','title':'گزارش دو تاریخ','text':'گزارش فروش در بازه زمانی مشخص','url':url_for('date_range_report'),'btn':'گزارش‌گیری','btn_color':'info'},
+            {'icon':'fas fa-receipt','color':'#8e44ad','title':'هزینه‌های مغازه','text':'ثبت و مدیریت هزینه‌های روزانه','url':url_for('shop_expenses'),'btn':'مدیریت هزینه','btn_color':'dark'},
+            {'icon':'fas fa-warehouse','color':'#17a2b8','title':'موجودی کالاها','text':'بررسی موجودی و کالاهای رو به اتمام','url':url_for('stock_report'),'btn':'بررسی موجودی','btn_color':'info'},
+            {'icon':'fas fa-shopping-cart','color':'#457b9d','title':'فاکتورهای خرید','text':'مدیریت خریدها از تامین‌کنندگان','url':url_for('purchase_invoices_list'),'btn':'مشاهده خریدها','btn_color':'primary'},
+            {'icon':'fas fa-hand-holding-usd','color':'#2a9d8f','title':'بدهی تامین‌کنندگان','text':'پیگیری بدهی‌های پرداخت نشده','url':url_for('supplier_debts'),'btn':'مشاهده بدهی','btn_color':'success'},
+            {'icon':'fas fa-mosque','color':'#e76f51','title':'محاسبه زکات','text':'محاسبه ۲.۵٪ از ارزش کالاهای موجود','url':url_for('zakat_calculator'),'btn':'محاسبه زکات','btn_color':'danger'},
+            {'icon':'fas fa-user-minus','color':'#c0392b','title':'بدهکاران','text': debtors_text,'url':url_for('debtors'),'btn':'مشاهده بدهکاران','btn_color':'danger'},
+            {'icon':'fas fa-database','color':'#6c757d','title':'پشتیبان‌گیری','text':'ذخیره و بازیابی اطلاعات فروشگاه','url':url_for('backup_page'),'btn':'مدیریت پشتیبان','btn_color':'secondary'},
         ] %}
         
         {% for card in cards %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm card-hover text-center p-3">
-                <div class="card-body d-flex flex-column">
-                    <i class="{{ card.icon }} fa-2x mb-3" style="color: {{ card.color }};"></i>
-                    <h5 class="card-title fw-bold">{{ card.title }}</h5>
-                    <p class="card-text text-muted flex-grow-1">{{ card.text|safe }}</p>
-                    <a href="{{ card.url }}" class="btn btn-outline-{{ card.btn_color }} rounded-pill px-4 mt-auto">{{ card.btn }}</a>
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card h-100 text-center p-3">
+                <div class="card-body d-flex flex-column align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center mb-3" 
+                         style="width: 70px; height: 70px; background: {{ card.color }}20; color: {{ card.color }};">
+                        <i class="{{ card.icon }} fa-2x"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">{{ card.title }}</h5>
+                    <p class="card-text text-muted small flex-grow-1">{{ card.text|safe }}</p>
+                    <a href="{{ card.url }}" class="btn btn-outline-{{ card.btn_color }} rounded-pill px-4 mt-auto w-100">{{ card.btn }}</a>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- بخش اطلاع‌رسانی -->
-    <div class="row mt-5">
+    <!-- بخش پشتیبانی -->
+    <div class="row mt-5 mb-4">
         <div class="col-12">
-            <div class="card bg-light border-0">
+            <div class="card bg-white border-0 shadow-sm" style="border-radius: 20px;">
                 <div class="card-body text-center py-4">
-                    <h4 class="fw-bold mb-3">
-                        <i class="fas fa-headset me-2 text-primary"></i>پشتیبانی فنی
+                    <h4 class="fw-bold mb-3 text-primary">
+                        <i class="fas fa-headset me-2"></i>پشتیبانی فنی
                     </h4>
-                    <p class="lead mb-4">در صورت بروز هرگونه مشکل فنی یا نیاز به راهنمایی با پشتیبانی فنی تماس بگیرید</p>
-                    <div class="row justify-content-center">
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-around">
-                                <div class="text-center">
-                                    <i class="fas fa-phone fa-2x text-success mb-2"></i>
-                                    <h6>محمد عمر خاوران</h6>
-                                    <p class="mb-1">
-                                        <a href="tel:09159499928" class="text-decoration-none">09159499928</a>
-                                    </p>
-                                    <small class="text-muted">پشتیبانی فنی</small>
-                                </div>
-                                <div class="text-center">
-                                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                                    <h6>ساعات پاسخگویی</h6>
-                                    <p class="mb-1">۸ صبح تا ۱۰ شب</p>
-                                    <small class="text-muted">همه روزه</small>
-                                </div>
-                            </div>
+                    <p class="text-muted mb-4">در صورت بروز هرگونه مشکل فنی با ما در تماس باشید</p>
+                    <div class="d-flex justify-content-center gap-4">
+                        <div class="text-center">
+                            <i class="fas fa-phone fa-2x text-success mb-2"></i>
+                            <h6 class="fw-bold">محمد عمر خاوران</h6>
+                            <a href="tel:09159499928" class="text-decoration-none text-muted">09159499928</a>
+                        </div>
+                        <div class="text-center">
+                            <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                            <h6 class="fw-bold">ساعات پاسخگویی</h6>
+                            <span class="text-muted">۸ صبح تا ۱۰ شب</span>
                         </div>
                     </div>
                 </div>
@@ -170,73 +128,55 @@
     </div>
 </div>
 
-<!-- استایل‌های زیبا برای کارت‌ها -->
+<!-- استایل اختصاصی این صفحه -->
 <style>
-.card-hover {
-    transition: all 0.3s ease-in-out;
-    border-radius: 1rem;
-}
-.card-hover:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.15);
-}
-.stat-card {
-    transition: transform 0.3s ease;
-    border-radius: 12px;
-}
-.stat-card:hover {
-    transform: translateY(-3px);
-}
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #1d3557 0%, #e63946 100%);
-}
-.display-6 {
-    font-size: 2rem;
-    font-weight: 700;
-}
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .display-6 {
+        font-size: 2.2rem;
+    }
+    /* افکت برای دکمه‌های کارت */
+    .card .btn {
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .card .btn:hover {
+        background-color: var(--bs-btn-hover-bg);
+        color: white !important;
+    }
 </style>
 
 <script>
-// لود آمار سریع
 document.addEventListener('DOMContentLoaded', function() {
     loadQuickStats();
 });
 
 function loadQuickStats() {
-    // تعداد کالاها
     fetch('/api/search_products_all?q=')
         .then(response => response.json())
         .then(data => {
             document.getElementById('productsCount').textContent = data.length;
+            const outOfStock = data.filter(product => product.stock === 0);
+            document.getElementById('outOfStockCount').textContent = outOfStock.length;
         })
-        .catch(error => {
-            console.error('Error loading products count:', error);
-        });
+        .catch(error => console.error('Error:', error));
 
-    // تعداد فاکتورهای امروز
     const today = new Date().toLocaleDateString('fa-IR');
     fetch('/api/shop_expenses?start_date=' + today + '&end_date=' + today)
         .then(response => response.json())
         .then(data => {
-            document.getElementById('todayInvoices').textContent = data.length;
+            if(Array.isArray(data)) {
+                document.getElementById('todayInvoices').textContent = data.length;
+            }
         })
-        .catch(error => {
-            console.error('Error loading today invoices:', error);
-        });
-
-    // کالاهای اتمام موجودی
-    fetch('/api/search_products_all?q=')
-        .then(response => response.json())
-        .then(data => {
-            const outOfStock = data.filter(product => product.stock === 0);
-            document.getElementById('outOfStockCount').textContent = outOfStock.length;
-        })
-        .catch(error => {
-            console.error('Error loading out of stock count:', error);
-        });
+        .catch(error => console.error('Error:', error));
 }
 
-// به‌روزرسانی هر 30 ثانیه
 setInterval(loadQuickStats, 30000);
 </script>
 {% endblock %}
