@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}تاریخچه قیمت کالا - سوئد یدک{% endblock %}
+{% block content %}
+<div class="card border-0">
+  <div class="card-header text-white" style="background:linear-gradient(110deg,#276e91,#21a67a)">
+    <h5 class="mb-0"><i class="fas fa-clock-rotate-left me-2"></i> تاریخچه قیمت‌گذاری کالا</h5>
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div><h4 class="mb-1">{{ product.name }}</h4><span class="text-muted">شناسه: {{ product.sku or '—' }}</span></div>
+      <a class="btn btn-outline-primary" href="{{ url_for('products') }}"><i class="fas fa-arrow-right me-1"></i> بازگشت به کالاها</a>
+    </div>
+    {% if history %}
+    <div class="table-responsive"><table class="table table-hover align-middle">
+      <thead class="table-light"><tr><th>تاریخ شمسی</th><th>نوع قیمت</th><th>قیمت قبلی</th><th>قیمت جدید</th></tr></thead>
+      <tbody>{% for h in history %}<tr><td><span class="badge rounded-pill text-bg-success">{{ h.changed_at_jalali }}</span></td><td>{{ h.field_name }}</td><td>{{ '{:,.2f}'.format(h.old_price) if h.old_price is not none else '—' }}</td><td class="fw-bold text-primary">{{ '{:,.2f}'.format(h.new_price) if h.new_price is not none else '—' }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="alert alert-info">هنوز سابقه‌ای برای تغییر قیمت این کالا ثبت نشده است.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
