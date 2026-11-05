@@ -159,6 +159,26 @@ input[type="text"], input[type="number"] {
             </div>
             <div class="card-body">
                 <input type="text" id="searchBox" class="form-control mb-3" placeholder="نام یا شناسه کالا را جستجو کنید...">
+                <style>
+.sw-keyword-toolbar{margin:0 0 12px}.sw-keyword-open{border-radius:11px;min-height:42px;font-weight:700}
+.sw-keyword-backdrop{position:fixed;inset:0;background:#0f172a80;z-index:1088;opacity:0;visibility:hidden;transition:.22s}
+.sw-keyword-drawer{position:fixed;z-index:1089;top:0;right:0;width:min(390px,91vw);height:100dvh;background:#fff;box-shadow:-12px 0 40px #0f172a30;transform:translateX(110%);transition:transform .25s ease;padding:20px;overflow:auto;direction:rtl}
+.sw-keyword-drawer.show{transform:translateX(0)}.sw-keyword-backdrop.show{opacity:1;visibility:visible}
+.sw-keyword-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5eaf0;padding-bottom:15px}.sw-keyword-head strong{display:block;color:#1e293b}.sw-keyword-head small{display:block;color:#64748b;margin-top:5px}
+.sw-keyword-close{border:0;background:#f1f5f9;border-radius:9px;width:38px;height:38px;font-size:25px;color:#334155}
+.sw-keyword-search{position:relative;margin-top:16px}.sw-keyword-search i{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#64748b}.sw-keyword-search input{padding-right:40px;min-height:44px;border-radius:11px}
+.sw-keyword-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.sw-keyword-chip{border:1px solid #dbe4ee;background:#f8fafc;color:#26364a;border-radius:30px;padding:8px 13px;font-weight:600}.sw-keyword-chip:hover{background:#0d9488;color:white;border-color:#0d9488}.sw-keyword-chip[hidden]{display:none!important}body.sw-keyword-open{overflow:hidden}
+@media(max-width:575px){.sw-keyword-toolbar .sw-keyword-open{width:100%}.sw-keyword-drawer{padding:17px}}
+</style>
+                <div class="sw-keyword-toolbar"><button type="button" class="btn btn-outline-primary sw-keyword-open" id="newKwOpen"><i class="fas fa-tags ms-1"></i> کلیدواژه‌های سریع</button></div>
+<div class="sw-keyword-backdrop" id="newKwBackdrop"></div>
+<aside class="sw-keyword-drawer" id="newKwDrawer" aria-hidden="true">
+ <div class="sw-keyword-head"><div><strong><i class="fas fa-tags ms-1"></i> جستجوی سریع کالا</strong><small>برای جستجو یک واژه را انتخاب کنید.</small></div><button type="button" class="sw-keyword-close" id="newKwClose">&times;</button></div>
+ <div class="sw-keyword-search"><i class="fas fa-search"></i><input type="search" id="newKwSearch" class="form-control" placeholder="جستجو بین کلیدواژه‌ها..." autocomplete="off"></div>
+ <div class="sw-keyword-chips"><button type="button" class="sw-keyword-chip" data-keyword="لامپ">لامپ</button><button type="button" class="sw-keyword-chip" data-keyword="واشر">واشر</button><button type="button" class="sw-keyword-chip" data-keyword="روغن">روغن</button><button type="button" class="sw-keyword-chip" data-keyword="اورینگ">اورینگ</button><button type="button" class="sw-keyword-chip" data-keyword="پمپ">پمپ</button><button type="button" class="sw-keyword-chip" data-keyword="بست">بست</button><button type="button" class="sw-keyword-chip" data-keyword="بوش">بوش</button><button type="button" class="sw-keyword-chip" data-keyword="تسمه">تسمه</button><button type="button" class="sw-keyword-chip" data-keyword="سردکن">سردکن</button><button type="button" class="sw-keyword-chip" data-keyword="شیشه">شیشه</button><button type="button" class="sw-keyword-chip" data-keyword="شیلنگ">شیلنگ</button><button type="button" class="sw-keyword-chip" data-keyword="فیوز">فیوز</button><button type="button" class="sw-keyword-chip" data-keyword="لوازم">لوازم</button><button type="button" class="sw-keyword-chip" data-keyword="لوله">لوله</button><button type="button" class="sw-keyword-chip" data-keyword="هرزگرد">هرزگرد</button><button type="button" class="sw-keyword-chip" data-keyword="واتر">واتر</button><button type="button" class="sw-keyword-chip" data-keyword="پایه">پایه</button><button type="button" class="sw-keyword-chip" data-keyword="چراغ">چراغ</button><button type="button" class="sw-keyword-chip" data-keyword="چسب">چسب</button><button type="button" class="sw-keyword-chip" data-keyword="کاسه">کاسه</button><button type="button" class="sw-keyword-chip" data-keyword="کلید">کلید</button><button type="button" class="sw-keyword-chip" data-keyword="کورکن">کورکن</button><button type="button" class="sw-keyword-chip" data-keyword="کیت">کیت</button><button type="button" class="sw-keyword-chip" data-keyword="کیسه">کیسه</button><button type="button" class="sw-keyword-chip" data-keyword="گلگیر">گلگیر</button><button type="button" class="sw-keyword-chip" data-keyword="پیچ">پیچ</button><button type="button" class="sw-keyword-chip" data-keyword="گیربکس">گیربکس</button><button type="button" class="sw-keyword-chip" data-keyword="موتور">موتور</button><button type="button" class="sw-keyword-chip" data-keyword="فلنچ">فلنچ</button><button type="button" class="sw-keyword-chip" data-keyword="سنسور">سنسور</button><button type="button" class="sw-keyword-chip" data-keyword="درب">درب</button></div>
+ <button type="button" class="btn btn-outline-secondary w-100 mt-3" id="newKwClear">پاک کردن جستجو</button>
+</aside>
+                
                 <div id="searchResults" style="max-height: 500px; overflow-y: auto;"></div>
             </div>
         </div>
@@ -690,4 +710,19 @@ input[type=number],input.input-number{direction:ltr;text-align:left;font-variant
 @media(min-width:768px) and (max-width:1100px){.table{font-size:13px}.card-body{padding:17px!important}}
 @media print{body{background:#fff!important}.card{box-shadow:none!important;border:0!important}.btn,.nav-tabs,.navbar,.app-drawer,.drawer-backdrop{display:none!important}}
 </style>
+<script>
+(function(){
+ const prefix='newKw', target=document.getElementById('searchBox');
+ const drawer=document.getElementById(prefix+'Drawer'), back=document.getElementById(prefix+'Backdrop');
+ const open=document.getElementById(prefix+'Open'), close=document.getElementById(prefix+'Close'), search=document.getElementById(prefix+'Search');
+ if(!target||!drawer||!open)return;
+ function show(){drawer.classList.add('show');back.classList.add('show');drawer.setAttribute('aria-hidden','false');document.body.classList.add('sw-keyword-open');search.focus();}
+ function hide(){drawer.classList.remove('show');back.classList.remove('show');drawer.setAttribute('aria-hidden','true');document.body.classList.remove('sw-keyword-open');}
+ open.addEventListener('click',show);close.addEventListener('click',hide);back.addEventListener('click',hide);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')hide();});
+ search.addEventListener('input',()=>{const q=window.normalizePersianSearchText(search.value);drawer.querySelectorAll('.sw-keyword-chip').forEach(b=>b.hidden=!window.normalizePersianSearchText(b.textContent).includes(q));});
+ drawer.querySelectorAll('.sw-keyword-chip').forEach(b=>b.addEventListener('click',()=>{target.value=b.dataset.keyword;target.dispatchEvent(new Event('input',{bubbles:true}));hide();target.focus();}));
+ document.getElementById(prefix+'Clear').addEventListener('click',()=>{target.value='';target.dispatchEvent(new Event('input',{bubbles:true}));search.value='';drawer.querySelectorAll('.sw-keyword-chip').forEach(b=>b.hidden=false);hide();target.focus();});
+})();
+</script>
 {% endblock %}
