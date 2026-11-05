@@ -1,0 +1,1122 @@
+{% extends "base.html" %}
+{% block title %}گزارش موجودی کالاها - سوئد یدک{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-4">گزارش موجودی کالاها و لیست خرید</h3>
+        
+        <!-- تب‌ها -->
+        <ul class="nav nav-tabs mb-4" id="stockTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="out-of-stock-tab" data-bs-toggle="tab" data-bs-target="#out-of-stock" type="button" role="tab" data-tab="out-of-stock">
+                    کالاهای تمام‌شده <span class="badge bg-danger" id="out-of-stock-count">{{ out_of_stock|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="low-stock-tab" data-bs-toggle="tab" data-bs-target="#low-stock" type="button" role="tab" data-tab="low-stock">
+                    کالاهای رو به اتمام <span class="badge bg-warning" id="low-stock-count">{{ low_stock|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="normal-stock-tab" data-bs-toggle="tab" data-bs-target="#normal-stock" type="button" role="tab" data-tab="normal-stock">
+                    سایر کالاها <span class="badge bg-success" id="normal-stock-count">{{ normal_stock|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="top-selling-tab" data-bs-toggle="tab" data-bs-target="#top-selling" type="button" role="tab" data-tab="top-selling">
+                    پرفروش‌ها <span class="badge bg-info" id="top-selling-count">{{ top_selling|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="purchase-list-tab" data-bs-toggle="tab" data-bs-target="#purchase-list" type="button" role="tab">
+                    لیست خرید <span class="badge bg-primary" id="purchase-list-count">{{ purchase_lists|length }}</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="stockTabsContent">
+            
+            <!-- تب کالاهای تمام‌شده -->
+            <div class="tab-pane fade show active" id="out-of-stock" role="tabpanel">
+                <div class="card">
+                    <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-exclamation-triangle me-2"></i> کالاهای تمام‌شده
+                        </div>
+                        <div class="search-box" style="width: 300px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control search-input" placeholder="جستجو در کالاهای تمام‌شده..." data-tab="out-of-stock">
+                                <button class="btn btn-outline-light" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="out-of-stock-content">
+                            {% if out_of_stock %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>نام کالا</th>
+                                            <th>شناسه</th>
+                                            <th>موجودی</th>
+                                            <th>قیمت خرید</th>
+                                            <th>قیمت فروش</th>
+                                            <th>انبار</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in out_of_stock %}
+                                        <tr id="product-{{ p.id }}" class="product-row" data-tab="out-of-stock">
+                                            <td>{{ p.name }}</td>
+                                            <td>{{ p.sku or '—' }}</td>
+                                            <td class="text-danger"><strong>0</strong></td>
+                                            <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }} تومان</td>
+                                            <td>{{ "{:,.0f}".format(p.sell_price) }} تومان</td>
+                                            <td>{{ p.warehouse or '—' }}</td>
+                                            <td>
+                                                <div class="purchase-form" data-product-id="{{ p.id }}">
+                                                    <div class="input-group input-group-sm mb-2" style="width: 200px;">
+                                                        <select class="form-select purchase-list-select">
+                                                            <option value="">انتخاب لیست خرید</option>
+                                                            {% for pl in purchase_lists %}
+                                                            <option value="{{ pl.id }}">{{ pl.supplier_name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="number" class="form-control quantity-input" value="1" min="1" max="1000" placeholder="تعداد">
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="text" class="form-control notes-input" placeholder="توضیحات (اختیاری)">
+                                                    </div>
+                                                    <button class="btn btn-success btn-sm btn-add-to-purchase" data-product-id="{{ p.id }}" data-product-name="{{ p.name }}">
+                                                        <i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید
+                                                    </button>
+                                                </div>
+                                                <div class="purchase-status mt-1" id="status-{{ p.id }}"></div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center">کالایی با موجودی صفر وجود ندارد.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تب کالاهای رو به اتمام -->
+            <div class="tab-pane fade" id="low-stock" role="tabpanel">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-exclamation-circle me-2"></i> کالاهای رو به اتمام (موجودی کمتر از ۵)
+                        </div>
+                        <div class="search-box" style="width: 300px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control search-input" placeholder="جستجو در کالاهای رو به اتمام..." data-tab="low-stock">
+                                <button class="btn btn-outline-dark" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="low-stock-content">
+                            {% if low_stock %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>نام کالا</th>
+                                            <th>شناسه</th>
+                                            <th>موجودی</th>
+                                            <th>قیمت خرید</th>
+                                            <th>قیمت فروش</th>
+                                            <th>انبار</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in low_stock %}
+                                        <tr id="product-{{ p.id }}" class="product-row" data-tab="low-stock">
+                                            <td>{{ p.name }}</td>
+                                            <td>{{ p.sku or '—' }}</td>
+                                            <td class="text-warning"><strong>{{ p.stock }}</strong></td>
+                                            <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }} تومان</td>
+                                            <td>{{ "{:,.0f}".format(p.sell_price) }} تومان</td>
+                                            <td>{{ p.warehouse or '—' }}</td>
+                                            <td>
+                                                <div class="purchase-form" data-product-id="{{ p.id }}">
+                                                    <div class="input-group input-group-sm mb-2" style="width: 200px;">
+                                                        <select class="form-select purchase-list-select">
+                                                            <option value="">انتخاب لیست خرید</option>
+                                                            {% for pl in purchase_lists %}
+                                                            <option value="{{ pl.id }}">{{ pl.supplier_name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="number" class="form-control quantity-input" value="1" min="1" max="1000" placeholder="تعداد">
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="text" class="form-control notes-input" placeholder="توضیحات (اختیاری)">
+                                                    </div>
+                                                    <button class="btn btn-success btn-sm btn-add-to-purchase" data-product-id="{{ p.id }}" data-product-name="{{ p.name }}">
+                                                        <i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید
+                                                    </button>
+                                                </div>
+                                                <div class="purchase-status mt-1" id="status-{{ p.id }}"></div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center">کالایی با موجودی کم وجود ندارد.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تب سایر کالاها -->
+            <div class="tab-pane fade" id="normal-stock" role="tabpanel">
+                <div class="card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-check-circle me-2"></i> سایر کالاها (موجودی ≥ ۵)
+                        </div>
+                        <div class="search-box" style="width: 300px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control search-input" placeholder="جستجو در سایر کالاها..." data-tab="normal-stock">
+                                <button class="btn btn-outline-light" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="normal-stock-content">
+                            {% if normal_stock %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>نام کالا</th>
+                                            <th>شناسه</th>
+                                            <th>موجودی</th>
+                                            <th>قیمت خرید</th>
+                                            <th>قیمت فروش</th>
+                                            <th>انبار</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in normal_stock %}
+                                        <tr id="product-{{ p.id }}" class="product-row" data-tab="normal-stock">
+                                            <td>{{ p.name }}</td>
+                                            <td>{{ p.sku or '—' }}</td>
+                                            <td>{{ p.stock }}</td>
+                                            <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }} تومان</td>
+                                            <td>{{ "{:,.0f}".format(p.sell_price) }} تومان</td>
+                                            <td>{{ p.warehouse or '—' }}</td>
+                                            <td>
+                                                <div class="purchase-form" data-product-id="{{ p.id }}">
+                                                    <div class="input-group input-group-sm mb-2" style="width: 200px;">
+                                                        <select class="form-select purchase-list-select">
+                                                            <option value="">انتخاب لیست خرید</option>
+                                                            {% for pl in purchase_lists %}
+                                                            <option value="{{ pl.id }}">{{ pl.supplier_name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="number" class="form-control quantity-input" value="1" min="1" max="1000" placeholder="تعداد">
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="text" class="form-control notes-input" placeholder="توضیحات (اختیاری)">
+                                                    </div>
+                                                    <button class="btn btn-success btn-sm btn-add-to-purchase" data-product-id="{{ p.id }}" data-product-name="{{ p.name }}">
+                                                        <i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید
+                                                    </button>
+                                                </div>
+                                                <div class="purchase-status mt-1" id="status-{{ p.id }}"></div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center">کالایی با موجودی کافی وجود ندارد.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تب پرفروش‌ها -->
+            <div class="tab-pane fade" id="top-selling" role="tabpanel">
+                <div class="card">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-chart-line me-2"></i> کالاهای پرفروش
+                        </div>
+                        <div class="search-box" style="width: 300px;">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control search-input" placeholder="جستجو در پرفروش‌ها..." data-tab="top-selling">
+                                <button class="btn btn-outline-light" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="top-selling-content">
+                            {% if top_selling %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>نام کالا</th>
+                                            <th>شناسه</th>
+                                            <th>موجودی</th>
+                                            <th>تعداد فروش</th>
+                                            <th>قیمت خرید</th>
+                                            <th>قیمت فروش</th>
+                                            <th>انبار</th>
+                                            <th>عملیات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in top_selling %}
+                                        <tr id="product-{{ p.id }}" class="product-row" data-tab="top-selling">
+                                            <td>{{ p.name }}</td>
+                                            <td>{{ p.sku or '—' }}</td>
+                                            <td>{{ p.stock }}</td>
+                                            <td><span class="badge bg-info">{{ p.sales_count }}</span></td>
+                                            <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }} تومان</td>
+                                            <td>{{ "{:,.0f}".format(p.sell_price) }} تومان</td>
+                                            <td>{{ p.warehouse or '—' }}</td>
+                                            <td>
+                                                <div class="purchase-form" data-product-id="{{ p.id }}">
+                                                    <div class="input-group input-group-sm mb-2" style="width: 200px;">
+                                                        <select class="form-select purchase-list-select">
+                                                            <option value="">انتخاب لیست خرید</option>
+                                                            {% for pl in purchase_lists %}
+                                                            <option value="{{ pl.id }}">{{ pl.supplier_name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="number" class="form-control quantity-input" value="1" min="1" max="1000" placeholder="تعداد">
+                                                    </div>
+                                                    <div class="input-group input-group-sm mb-2">
+                                                        <input type="text" class="form-control notes-input" placeholder="توضیحات (اختیاری)">
+                                                    </div>
+                                                    <button class="btn btn-success btn-sm btn-add-to-purchase" data-product-id="{{ p.id }}" data-product-name="{{ p.name }}">
+                                                        <i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید
+                                                    </button>
+                                                </div>
+                                                <div class="purchase-status mt-1" id="status-{{ p.id }}"></div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted text-center">هیچ کالای پرفروشی وجود ندارد.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- تب لیست خرید -->
+            <div class="tab-pane fade" id="purchase-list" role="tabpanel">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-shopping-cart me-2"></i> لیست خرید
+                        <button class="btn btn-sm btn-light float-end" data-bs-toggle="modal" data-bs-target="#createPurchaseListModal">
+                            <i class="fas fa-plus me-1"></i> ایجاد لیست خرید جدید
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="purchase-lists-content">
+                            {% if purchase_lists %}
+                                {% for pl in purchase_lists %}
+                                <div class="card mb-3 purchase-list-card" id="purchase-list-{{ pl.id }}">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-store me-2"></i>
+                                            {{ pl.supplier_name }}
+                                            <small class="text-muted">({{ pl.created_date_jalali }})</small>
+                                            {% if pl.estimated_total > 0 %}
+                                            <span class="badge bg-warning ms-2">تخمینی: {{ "{:,.0f}".format(pl.estimated_total) }} تومان</span>
+                                            {% endif %}
+                                        </h6>
+                                        <div>
+                                            <a href="{{ url_for('convert_purchase_list_to_invoice', purchase_list_id=pl.id) }}" class="btn btn-sm btn-success me-1">
+                                                <i class="fas fa-file-invoice me-1"></i> تبدیل به فاکتور
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-primary me-1 btn-edit-list" data-list-id="{{ pl.id }}" data-supplier-name="{{ pl.supplier_name }}" data-notes="{{ pl.notes or '' }}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{{ url_for('print_purchase_list', purchase_list_id=pl.id) }}" class="btn btn-sm btn-outline-info me-1" target="_blank">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger btn-delete-list" data-list-id="{{ pl.id }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="purchase-list-items-{{ pl.id }}">
+                                            <div class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin"></i>
+                                                در حال بارگذاری...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                                    <p>هیچ لیست خریدی وجود ندارد</p>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPurchaseListModal">
+                                        <i class="fas fa-plus me-1"></i> ایجاد اولین لیست خرید
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ایجاد لیست خرید -->
+<div class="modal fade" id="createPurchaseListModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ایجاد لیست خرید جدید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createPurchaseListForm">
+                    <div class="mb-3">
+                        <label for="supplier_name" class="form-label">نام فروشگاه / تامین کننده <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="supplier_name" name="supplier_name" required>
+                        <div class="form-text">مثال: فروشگاه صداقت، آقای امینی، فروشگاه اکبری</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">توضیحات (اختیاری)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="توضیحات مربوط به این لیست خرید..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="btn-create-purchase-list">
+                    <i class="fas fa-plus me-1"></i> ایجاد لیست
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ویرایش لیست خرید -->
+<div class="modal fade" id="editPurchaseListModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">ویرایش لیست خرید</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPurchaseListForm">
+                    <input type="hidden" id="edit_list_id" name="purchase_list_id">
+                    <div class="mb-3">
+                        <label for="edit_supplier_name" class="form-label">نام فروشگاه / تامین کننده <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_supplier_name" name="supplier_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_notes" class="form-label">توضیحات (اختیاری)</label>
+                        <textarea class="form-control" id="edit_notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="btn-update-purchase-list">
+                    <i class="fas fa-save me-1"></i> ذخیره تغییرات
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{{ url_for('index') }}" class="btn btn-outline-secondary mt-3">
+    <i class="fas fa-arrow-right me-1"></i> بازگشت به صفحه اصلی
+</a>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- اضافه کردن jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // بارگذاری آیتم‌های لیست‌های خرید
+    $('.purchase-list-card').each(function() {
+        const listId = $(this).attr('id').split('-')[2];
+        loadPurchaseListItems(listId);
+    });
+
+    // ایجاد لیست خرید جدید - نسخه اصلاح شده
+    $('#btn-create-purchase-list').click(function() {
+        createPurchaseList();
+    });
+
+    // همچنین با Enter هم کار کند
+    $('#supplier_name').keypress(function(e) {
+        if (e.which === 13) { // Enter key
+            createPurchaseList();
+        }
+    });
+
+    // تابع اصلی ایجاد لیست خرید
+    function createPurchaseList() {
+        const supplierName = $('#supplier_name').val().trim();
+        const notes = $('#notes').val().trim();
+
+        console.log('📝 داده‌های فرم:', { supplier_name: supplierName, notes: notes });
+
+        // اعتبارسنجی
+        if (!supplierName) {
+            showAlert('لطفاً نام فروشگاه را وارد کنید', 'danger');
+            $('#supplier_name').focus();
+            return;
+        }
+
+        // نمایش لودینگ
+        const $btn = $('#btn-create-purchase-list');
+        const originalText = $btn.html();
+        $btn.prop('disabled', true);
+        $btn.html('<i class="fas fa-spinner fa-spin me-1"></i> در حال ایجاد...');
+
+        console.log('🔄 ارسال درخواست به سرور...');
+
+        // ارسال درخواست با fetch
+        fetch('/api/create_purchase_list', {
+            method: 'POST',
+            body: new URLSearchParams({
+                'supplier_name': supplierName,
+                'notes': notes || ''
+            }),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => {
+            console.log('📨 وضعیت پاسخ:', response.status);
+            if (!response.ok) {
+                throw new Error(`خطای HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ پاسخ سرور:', data);
+            
+            if (data.success) {
+                showAlert('لیست خرید با موفقیت ایجاد شد', 'success');
+                $('#createPurchaseListModal').modal('hide');
+                
+                // پاک کردن فرم
+                $('#supplier_name').val('');
+                $('#notes').val('');
+                
+                // ریلود صفحه بعد از تأخیر
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+                
+            } else {
+                showAlert('خطا: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('❌ خطای شبکه:', error);
+            showAlert('خطا در ارتباط با سرور: ' + error.message, 'danger');
+        })
+        .finally(() => {
+            // بازگرداندن دکمه به حالت اول
+            $btn.prop('disabled', false);
+            $btn.html(originalText);
+        });
+    }
+
+    // جستجوی زنده در تب‌ها
+    $('.search-input').on('input', function() {
+        const searchTerm = $(this).val().trim();
+        const tab = $(this).data('tab');
+        searchProducts(tab, searchTerm);
+    });
+
+    // تابع جستجوی محصولات
+    function searchProducts(tab, query) {
+        const $content = $(`#${tab}-content`);
+        
+        // نمایش لودینگ
+        $content.html(`
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="mt-2 text-muted">در حال جستجو...</p>
+            </div>
+        `);
+
+        $.ajax({
+            url: '/api/search_products_by_tab',
+            method: 'GET',
+            data: {
+                tab: tab,
+                q: query
+            },
+            success: function(response) {
+                updateTabContent(tab, response, query);
+            },
+            error: function(xhr, status, error) {
+                $content.html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطا در بارگذاری اطلاعات: ${error}
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // به روزرسانی محتوای تب پس از جستجو
+    function updateTabContent(tab, products, searchQuery) {
+        const $content = $(`#${tab}-content`);
+        const $countBadge = $(`#${tab}-count`);
+
+        // به روزرسانی شمارنده
+        $countBadge.text(products.length);
+
+        if (products.length === 0) {
+            let message = 'کالایی یافت نشد.';
+            if (searchQuery) {
+                message = `هیچ کالایی با عبارت "${searchQuery}" یافت نشد.`;
+            } else {
+                switch(tab) {
+                    case 'out-of-stock':
+                        message = 'کالایی با موجودی صفر وجود ندارد.';
+                        break;
+                    case 'low-stock':
+                        message = 'کالایی با موجودی کم وجود ندارد.';
+                        break;
+                    case 'normal-stock':
+                        message = 'کالایی با موجودی کافی وجود ندارد.';
+                        break;
+                    case 'top-selling':
+                        message = 'هیچ کالای پرفروشی وجود ندارد.';
+                        break;
+                }
+            }
+            
+            $content.html(`<p class="text-muted text-center">${message}</p>`);
+            return;
+        }
+
+        let tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+        `;
+
+        // هدر جدول بر اساس تب
+        if (tab === 'top-selling') {
+            tableHtml += `
+                <th>نام کالا</th>
+                <th>شناسه</th>
+                <th>موجودی</th>
+                <th>تعداد فروش</th>
+                <th>قیمت خرید</th>
+                <th>قیمت فروش</th>
+                <th>انبار</th>
+                <th>عملیات</th>
+            `;
+        } else {
+            tableHtml += `
+                <th>نام کالا</th>
+                <th>شناسه</th>
+                <th>موجودی</th>
+                <th>قیمت خرید</th>
+                <th>قیمت فروش</th>
+                <th>انبار</th>
+                <th>عملیات</th>
+            `;
+        }
+
+        tableHtml += `</tr></thead><tbody>`;
+
+        products.forEach(product => {
+            const stockClass = product.stock === 0 ? 'text-danger' : (product.stock < 5 ? 'text-warning' : '');
+            const stockDisplay = product.stock === 0 ? '<strong>0</strong>' : (product.stock < 5 ? `<strong>${product.stock}</strong>` : product.stock);
+            
+            tableHtml += `
+                <tr id="product-${product.id}" class="product-row" data-tab="${tab}">
+                    <td>${product.name}</td>
+                    <td>${product.sku || '—'}</td>
+                    <td class="${stockClass}">${stockDisplay}</td>
+            `;
+
+            if (tab === 'top-selling') {
+                tableHtml += `<td><span class="badge bg-info">${product.sales_count}</span></td>`;
+            }
+
+            tableHtml += `
+                    <td>${product.buy_price_tomans ? new Intl.NumberFormat().format(product.buy_price_tomans) + ' تومان' : '—'}</td>
+                    <td>${new Intl.NumberFormat().format(product.sell_price)} تومان</td>
+                    <td>${product.warehouse || '—'}</td>
+                    <td>
+                        <div class="purchase-form" data-product-id="${product.id}">
+                            <div class="input-group input-group-sm mb-2" style="width: 200px;">
+                                <select class="form-select purchase-list-select">
+                                    <option value="">انتخاب لیست خرید</option>
+            `;
+
+            // اضافه کردن لیست‌های خرید موجود
+            {% for pl in purchase_lists %}
+            tableHtml += `<option value="{{ pl.id }}">{{ pl.supplier_name }}</option>`;
+            {% endfor %}
+
+            tableHtml += `
+                                </select>
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="number" class="form-control quantity-input" value="1" min="1" max="1000" placeholder="تعداد">
+                            </div>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control notes-input" placeholder="توضیحات (اختیاری)">
+                            </div>
+                            <button class="btn btn-success btn-sm btn-add-to-purchase" data-product-id="${product.id}" data-product-name="${product.name}">
+                                <i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید
+                            </button>
+                        </div>
+                        <div class="purchase-status mt-1" id="status-${product.id}"></div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHtml += `</tbody></table></div>`;
+        $content.html(tableHtml);
+
+        // اضافه کردن event listener برای دکمه‌های جدید
+        attachEventListeners();
+    }
+
+    // تابع برای attaching event listeners به دکمه‌ها
+    function attachEventListeners() {
+        // افزودن به لیست خرید
+        $('.btn-add-to-purchase').off('click').click(function() {
+            const productId = $(this).data('product-id');
+            const productName = $(this).data('product-name');
+            const purchaseListId = $(this).closest('.purchase-form').find('.purchase-list-select').val();
+            const quantity = $(this).closest('.purchase-form').find('.quantity-input').val();
+            const notes = $(this).closest('.purchase-form').find('.notes-input').val();
+            
+            if (!purchaseListId) {
+                showStatus(productId, 'لطفاً لیست خرید را انتخاب کنید', 'danger');
+                return;
+            }
+
+            if (quantity < 1) {
+                showStatus(productId, 'تعداد باید بیشتر از صفر باشد', 'danger');
+                return;
+            }
+
+            // نمایش لودینگ
+            const $btn = $(this);
+            $btn.html('<i class="fas fa-spinner fa-spin me-1"></i> در حال افزودن...');
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/api/add_to_purchase_list',
+                method: 'POST',
+                data: {
+                    purchase_list_id: purchaseListId,
+                    product_id: productId,
+                    quantity: quantity,
+                    notes: notes
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showStatus(productId, 'به لیست خرید اضافه شد', 'success');
+                        // پاک کردن فرم
+                        $(`#product-${productId} .quantity-input`).val('1');
+                        $(`#product-${productId} .notes-input`).val('');
+                        // بارگذاری مجدد آیتم‌های لیست
+                        loadPurchaseListItems(purchaseListId);
+                    } else {
+                        showStatus(productId, response.error, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showStatus(productId, 'خطا در ارتباط با سرور: ' + error, 'danger');
+                },
+                complete: function() {
+                    // بازگرداندن دکمه به حالت اول
+                    $btn.html('<i class="fas fa-cart-plus me-1"></i> افزودن به لیست خرید');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // ویرایش لیست خرید
+        $('.btn-edit-list').off('click').click(function() {
+            const listId = $(this).data('list-id');
+            const supplierName = $(this).data('supplier-name');
+            const notes = $(this).data('notes') || '';
+            
+            $('#edit_list_id').val(listId);
+            $('#edit_supplier_name').val(supplierName);
+            $('#edit_notes').val(notes);
+            $('#editPurchaseListModal').modal('show');
+        });
+
+        // به‌روزرسانی لیست خرید
+        $('#btn-update-purchase-list').off('click').click(function() {
+            const listId = $('#edit_list_id').val();
+            const supplierName = $('#edit_supplier_name').val().trim();
+            const notes = $('#edit_notes').val().trim();
+
+            if (!supplierName) {
+                showAlert('لطفاً نام فروشگاه را وارد کنید', 'danger');
+                return;
+            }
+
+            const $btn = $(this);
+            $btn.html('<i class="fas fa-spinner fa-spin me-1"></i> در حال ذخیره...');
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '/api/update_purchase_list',
+                method: 'POST',
+                data: {
+                    purchase_list_id: listId,
+                    supplier_name: supplierName,
+                    notes: notes
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('لیست خرید با موفقیت ویرایش شد', 'success');
+                        $('#editPurchaseListModal').modal('hide');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showAlert('خطا در ویرایش لیست: ' + response.error, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showAlert('خطا در ارتباط با سرور: ' + error, 'danger');
+                },
+                complete: function() {
+                    $btn.html('<i class="fas fa-save me-1"></i> ذخیره تغییرات');
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
+
+        // حذف لیست خرید
+        $('.btn-delete-list').off('click').click(function() {
+            const listId = $(this).data('list-id');
+            
+            if (confirm('آیا از حذف این لیست خرید اطمینان دارید؟')) {
+                $.ajax({
+                    url: `/api/delete_purchase_list/${listId}`,
+                    method: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert('لیست خرید با موفقیت حذف شد', 'success');
+                            $(`#purchase-list-${listId}`).remove();
+                            updatePurchaseListCount();
+                        } else {
+                            showAlert('خطا در حذف لیست: ' + response.error, 'danger');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        showAlert('خطا در ارتباط با سرور: ' + error, 'danger');
+                    }
+                });
+            }
+        });
+    }
+
+    // بارگذاری آیتم‌های لیست خرید
+    function loadPurchaseListItems(listId) {
+        $.ajax({
+            url: `/api/get_purchase_list_items/${listId}`,
+            method: 'GET',
+            success: function(response) {
+                updatePurchaseListDisplay(listId, response);
+            },
+            error: function(xhr, status, error) {
+                $(`#purchase-list-items-${listId}`).html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        خطا در بارگذاری آیتم‌ها: ${error}
+                    </div>
+                `);
+            }
+        });
+    }
+
+    // به‌روزرسانی نمایش لیست خرید
+    function updatePurchaseListDisplay(listId, items) {
+        const $container = $(`#purchase-list-items-${listId}`);
+        
+        if (items.length === 0) {
+            $container.html(`
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-shopping-basket fa-2x mb-2"></i>
+                    <p>لیست خرید خالی است</p>
+                </div>
+            `);
+            return;
+        }
+
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>نام کالا</th>
+                            <th>شناسه</th>
+                            <th>موجودی فعلی</th>
+                            <th>تعداد مورد نیاز</th>
+                            <th>قیمت تخمینی</th>
+                            <th>جمع تخمینی</th>
+                            <th>توضیحات</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        items.forEach(item => {
+            html += `
+                <tr id="purchase-item-${item.id}">
+                    <td>${item.product_name}</td>
+                    <td>${item.sku || '—'}</td>
+                    <td>${item.current_stock}</td>
+                    <td>
+                        <div class="input-group input-group-sm" style="width: 120px;">
+                            <input type="number" class="form-control quantity-display" value="${item.quantity_to_buy}" min="1" max="1000" data-item-id="${item.id}">
+                            <button class="btn btn-outline-primary btn-update-quantity" type="button" data-item-id="${item.id}">
+                                <i class="fas fa-save"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td>${item.estimated_unit_price ? new Intl.NumberFormat().format(item.estimated_unit_price) + ' تومان' : '—'}</td>
+                    <td>${item.estimated_total_price ? new Intl.NumberFormat().format(item.estimated_total_price) + ' تومان' : '—'}</td>
+                    <td>${item.notes || '—'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger btn-remove-item" data-item-id="${item.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        $container.html(html);
+
+        // اضافه کردن event listeners برای آیتم‌ها
+        $(`#purchase-list-items-${listId} .btn-update-quantity`).click(function() {
+            const itemId = $(this).data('item-id');
+            const quantity = $(`#purchase-list-items-${listId} .quantity-display[data-item-id="${itemId}"]`).val();
+            updatePurchaseItemQuantity(itemId, quantity);
+        });
+
+        $(`#purchase-list-items-${listId} .btn-remove-item`).click(function() {
+            const itemId = $(this).data('item-id');
+            removeFromPurchaseList(itemId);
+        });
+    }
+
+    // به‌روزرسانی تعداد آیتم
+    function updatePurchaseItemQuantity(itemId, quantity) {
+        $.ajax({
+            url: '/api/update_purchase_item_quantity',
+            method: 'POST',
+            data: {
+                item_id: itemId,
+                quantity: quantity
+            },
+            success: function(response) {
+                if (response.success) {
+                    showAlert('تعداد با موفقیت به‌روزرسانی شد', 'success');
+                    // پیدا کردن لیست والد و بارگذاری مجدد
+                    const listCard = $(`#purchase-item-${itemId}`).closest('.purchase-list-card');
+                    const listId = listCard.attr('id').split('-')[2];
+                    loadPurchaseListItems(listId);
+                } else {
+                    showAlert('خطا در به‌روزرسانی: ' + response.error, 'danger');
+                }
+            },
+            error: function(xhr, status, error) {
+                showAlert('خطا در ارتباط با سرور: ' + error, 'danger');
+            }
+        });
+    }
+
+    // حذف از لیست خرید
+    function removeFromPurchaseList(itemId) {
+        if (confirm('آیا از حذف این آیتم از لیست خرید اطمینان دارید؟')) {
+            $.ajax({
+                url: '/api/remove_from_purchase_list',
+                method: 'POST',
+                data: {
+                    item_id: itemId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showAlert('آیتم با موفقیت حذف شد', 'success');
+                        $(`#purchase-item-${itemId}`).remove();
+                        // پیدا کردن لیست والد و بارگذاری مجدد
+                        const listCard = $(`#purchase-item-${itemId}`).closest('.purchase-list-card');
+                        const listId = listCard.attr('id').split('-')[2];
+                        loadPurchaseListItems(listId);
+                    } else {
+                        showAlert('خطا در حذف: ' + response.error, 'danger');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showAlert('خطا در ارتباط با سرور: ' + error, 'danger');
+                }
+            });
+        }
+    }
+
+    // به‌روزرسانی شمارنده لیست‌های خرید
+    function updatePurchaseListCount() {
+        const count = $('.purchase-list-card').length;
+        $('#purchase-list-count').text(count);
+    }
+
+    // نمایش پیام کلی
+    function showAlert(message, type) {
+        // حذف آلرت‌های قبلی
+        $('.alert-dismissible').alert('close');
+        
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+                <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('body').append(alertHtml);
+        
+        // حذف خودکار پس از 5 ثانیه
+        setTimeout(() => {
+            $('.alert').alert('close');
+        }, 5000);
+    }
+
+    // نمایش وضعیت
+    function showStatus(productId, message, type) {
+        const statusDiv = $(`#status-${productId}`);
+        statusDiv.html(`
+            <div class="alert alert-${type} alert-dismissible py-1 px-2 mb-0">
+                <small>${message}</small>
+                <button type="button" class="btn-close p-1" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        
+        setTimeout(() => {
+            statusDiv.html('');
+        }, 3000);
+    }
+
+    // فراخوانی اولیه برای attaching event listeners
+    attachEventListeners();
+});
+</script>
+
+<style>
+.search-box {
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.product-row {
+    transition: all 0.3s ease;
+}
+
+.loading {
+    cursor: wait !important;
+}
+
+.loading * {
+    cursor: wait !important;
+}
+
+.purchase-form .form-control,
+.purchase-form .form-select {
+    font-size: 0.875rem;
+}
+
+.purchase-status .alert {
+    font-size: 0.75rem;
+    margin-bottom: 0;
+}
+
+.quantity-display {
+    max-width: 60px;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.table td {
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+/* استایل برای جستجو */
+.search-highlight {
+    background-color: #fff3cd;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}گزارش بدهکاران - سوئد یدک{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-4">گزارش بدهکاران</h3>
+        <div class="alert alert-warning">
+            <p><strong>جمع کل بدهی بدهکاران:</strong> {{ "{:,.0f}".format(total_debt) }} تومان</p>
+        </div>
+        
+        {% if debtors %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>شماره فاکتور</th>
+                        <th>مشتری</th>
+                        <th>تلفن</th>
+                        <th>تاریخ</th>
+                        <th>مبلغ کل</th>
+                        <th>پرداخت شده</th>
+                        <th>باقیمانده</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for debtor in debtors %}
+                    <tr class="table-warning">
+                        <td><a href="{{ url_for('invoice_detail', invoice_id=debtor.id) }}">#{{ debtor.id }}</a></td>
+                        <td>{{ debtor.customer_name }}</td>
+                        <td>{{ debtor.customer_phone }}</td>
+                        <td>{{ debtor.date_jalali }}</td>
+                        <td>{{ "{:,.0f}".format(debtor.total_amount) }} تومان</td>
+                        <td>{{ "{:,.0f}".format(debtor.paid_amount) }} تومان</td>
+                        <td class="text-danger fw-bold">{{ "{:,.0f}".format(debtor.remaining) }} تومان</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-danger">
+                        <th colspan="6">جمع کل بدهی:</th>
+                        <th>{{ "{:,.0f}".format(total_debt) }} تومان</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-user-check fa-3x mb-3 opacity-50"></i>
+            <p>بدهکاری وجود ندارد. همه فاکتورها تسویه شده‌اند.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{{ url_for('index') }}" class="btn btn-outline-secondary mt-3">
+    <i class="fas fa-arrow-right me-1"></i> بازگشت به صفحه اصلی
+</a>
+
+{% endblock %}
