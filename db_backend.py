@@ -40,6 +40,8 @@ class Connection:
             cur=self.raw.cursor(); cur.execute("SELECT 'CREATE TABLE ' || c.relname || ' (...)' AS sql FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname=%s",(table,)); return Cursor(cur)
         if 'sqlite_sequence' in q: return Cursor(self.raw.cursor())
         q=re.sub(r'\bIFNULL\s*\(', 'COALESCE(', q, flags=re.I)
+        # SQLite GROUP_CONCAT(expr, separator) -> PostgreSQL STRING_AGG(expr, separator)
+        q=re.sub(r'\bGROUP_CONCAT\s*\(', 'STRING_AGG(', q, flags=re.I)
         q=q.replace('INSERT OR IGNORE INTO','INSERT INTO')
         ignored='INSERT OR IGNORE' in sql.upper()
         q=q.replace('?', '%s')
