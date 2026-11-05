@@ -610,7 +610,7 @@ def init_db():
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'user',
             permissions TEXT,
-            is_active BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT TRUE,
             created_date_greg TEXT,
             created_date_jalali TEXT,
             last_login_greg TEXT,
@@ -751,7 +751,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         conn = get_db()
-        user = conn.execute("SELECT * FROM users WHERE username = ? AND is_active = 1", (username,)).fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username = ? AND is_active = TRUE", (username,)).fetchone()
         conn.close()
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
@@ -831,7 +831,7 @@ def edit_user(user_id):
         username = request.form['username'].strip()
         role = request.form['role']
         permissions = request.form.get('permissions', '').strip() or None
-        is_active = request.form.get('is_active', 0)
+        is_active = request.form.get('is_active', '0') in ('1', 'true', 'True', 'on', 'yes')
         conn = get_db()
         conn.execute('''
             UPDATE users SET full_name = ?, username = ?, role = ?, permissions = ?, is_active = ?
