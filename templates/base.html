@@ -280,6 +280,25 @@
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+    // یکسان‌سازی حروف فارسی/عربی برای تمام کادرهای جستجو در برنامه
+    window.normalizePersianSearchText = function(value) {
+      return String(value == null ? '' : value)
+        .normalize('NFKC')
+        .replace(/[يىئ]/g, 'ی')
+        .replace(/ك/g, 'ک')
+        .replace(/[ۀة]/g, 'ه')
+        .replace(/[إأٱآ]/g, 'ا')
+        .replace(/[ًٌٍَُِّْـٰ]/g, '')
+        .replace(/[\u200c\u200d\ufeff]/g, '')
+        .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)))
+        .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLocaleLowerCase('fa');
+    };
+    </script>
     
     <script>
       (function(){ const offset = -new Date().getTimezoneOffset(); document.cookie = 'tz_offset=' + offset + '; path=/; max-age=31536000; SameSite=Lax'; })();
