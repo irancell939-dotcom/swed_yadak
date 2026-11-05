@@ -950,6 +950,7 @@ def products():
                 edit_product['sell_price'] = float(edit_product['sell_price'])
 
     if request.method == 'POST':
+        saved_product_id = request.form.get('product_id')
         try:
             name = request.form['name'].strip()
             sku = request.form['sku'].strip() or None
@@ -972,6 +973,7 @@ def products():
             stock = int(stock_str) if stock_str else 0
             description = request.form.get('description', '').strip() or None
             product_id = request.form.get('product_id')
+            saved_product_id = product_id
 
             now_jalali = browser_jalali_now().strftime('%Y/%m/%d %H:%M')
             if product_id:
@@ -990,6 +992,7 @@ def products():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, now_jalali, now_jalali))
                 new_id = cursor.lastrowid
+                saved_product_id = new_id
                 for label, value in [('قیمت خرید (تومان)', buy_tomans), ('قیمت خرید (دلار)', usd), ('قیمت فروش', sell_price)]:
                     conn.execute('INSERT INTO product_price_history (product_id, product_name, field_name, old_price, new_price, changed_at_jalali) VALUES (?, ?, ?, ?, ?, ?)', (new_id, name, label, None, value, now_jalali))
                 flash('کالا با موفقیت اضافه شد.', 'success')
@@ -1000,6 +1003,8 @@ def products():
             flash(f'خطا در ذخیره کالا: {str(e)}', 'danger')
         finally:
             conn.close()
+            if saved_product_id:
+                return redirect(url_for('products', focus=saved_product_id) + '#product-' + str(saved_product_id))
             return redirect(url_for('products'))
 
     products = conn.execute("SELECT * FROM products ORDER BY name").fetchall()
