@@ -1,242 +1,30 @@
 {% extends "base.html" %}
-{% block title %}خانه - سوئد یدک{% endblock %}
+{% block title %}داشبورد | سوئد یدک{% endblock %}
 {% block content %}
-<div class="container py-4" dir="rtl">
-    <!-- هدر خوش‌آمدگویی -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="card bg-gradient-primary text-white">
-                <div class="card-body text-center py-5">
-                    <h1 class="display-4 fw-bold mb-3">
-                        <i class="fas fa-truck-moving me-3"></i>سوئد یدک
-                    </h1>
-                    <p class="lead mb-4">سیستم جامع مدیریت فروشگاه لوازم یدکی اسکانیا</p>
-                    <div class="row justify-content-center">
-                        <div class="col-md-8">
-                            <div class="row text-center">
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-box-open fa-2x mb-2"></i>
-                                        <h5>مدیریت کالاها</h5>
-                                        <p class="mb-0">مدیریت کامل موجودی و قیمت‌ها</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-file-invoice-dollar fa-2x mb-2"></i>
-                                        <h5>صدور فاکتور</h5>
-                                        <p class="mb-0">سیستم سریع و هوشمند فاکتورنویسی</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <div class="p-3 bg-white bg-opacity-25 rounded">
-                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                        <h5>گزارش‌گیری</h5>
-                                        <p class="mb-0">تحلیل کامل عملکرد فروشگاه</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- آمار سریع -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <h3 class="fw-bold mb-4 text-center">
-                <i class="fas fa-tachometer-alt me-2 text-primary"></i>آمار سریع سیستم
-            </h3>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card border-primary">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-boxes fa-2x text-primary"></i>
-                    </div>
-                    <h5 class="card-title">تعداد کالاها</h5>
-                    <p class="display-6 text-primary mb-0" id="productsCount">0</p>
-                    <small class="text-muted">کالای فعال در سیستم</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card border-success">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-file-invoice fa-2x text-success"></i>
-                    </div>
-                    <h5 class="card-title">فاکتورهای امروز</h5>
-                    <p class="display-6 text-success mb-0" id="todayInvoices">0</p>
-                    <small class="text-muted">فاکتور صادر شده امروز</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card border-warning">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
-                    </div>
-                    <h5 class="card-title">کالاهای اتمام موجودی</h5>
-                    <p class="display-6 text-warning mb-0" id="outOfStockCount">0</p>
-                    <small class="text-muted">نیاز به سفارش فوری</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card stat-card border-danger">
-                <div class="card-body text-center">
-                    <div class="mb-3">
-                        <i class="fas fa-user-minus fa-2x text-danger"></i>
-                    </div>
-                    <h5 class="card-title">مشتریان بدهکار</h5>
-                    <p class="display-6 text-danger mb-0">{{ debtors_count or 0 }}</p>
-                    <small class="text-muted">تسویه نشده</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- کارت‌های اصلی -->
-    <div class="row g-4">
-        {% set debtors_text = 'لیست مشتریان تسویه‌نشده (' ~ (debtors_count or 0) ~ ' نفر)' %}
-        {% set cards = [
-            {'icon':'fas fa-boxes','color':'#1d3557','title':'مدیریت کالاها','text':'افزودن، ویرایش و جستجوی لوازم یدکی اسکانیا','url':url_for('products'),'btn':'ورود','btn_color':'primary'},
-            {'icon':'fas fa-file-invoice','color':'#e63946','title':'صدور فاکتور','text':'ثبت فاکتور جدید با جستجوی هوشمند کالا','url':url_for('invoice'),'btn':'صدور فاکتور','btn_color':'danger'},
-            {'icon':'fas fa-list','color':'#f4a261','title':'لیست فاکتورها','text':'مشاهده و پیگیری فاکتورهای صادر شده','url':url_for('invoices'),'btn':'لیست فاکتورها','btn_color':'warning'},
-            {'icon':'fas fa-chart-line','color':'#2a9d8f','title':'گزارش‌های مالی','text':'سود، فروش و عملکرد روزانه/ماهانه','url':url_for('reports'),'btn':'مشاهده','btn_color':'success'},
-            {'icon':'fas fa-calendar-alt','color':'#6f42c1','title':'گزارش بین دو تاریخ','text':'گزارش فروش در بازه زمانی مشخص','url':url_for('date_range_report'),'btn':'مشاهده','btn_color':'primary'},
-            {'icon':'fas fa-receipt','color':'#8e44ad','title':'هزینه‌های مغازه','text':'ثبت و مدیریت هزینه‌های روزانه مغازه','url':url_for('shop_expenses'),'btn':'مدیریت','btn_color':'info'},
-            {'icon':'fas fa-warehouse','color':'#8e44ad','title':'موجودی کالاها','text':'بررسی موجودی و کالاهای رو به اتمام','url':url_for('stock_report'),'btn':'مشاهده','btn_color':'info'},
-            {'icon':'fas fa-shopping-cart','color':'#17a2b8','title':'فاکتورهای خرید','text':'مدیریت خریدها از تامین‌کنندگان','url':url_for('purchase_invoices_list'),'btn':'مشاهده','btn_color':'info'},
-            {'icon':'fas fa-hand-holding-usd','color':'#6f42c1','title':'بدهی به تامین‌کنندگان','text':'پیگیری بدهی‌های پرداخت نشده','url':url_for('supplier_debts'),'btn':'مشاهده','btn_color':'primary'},
-            {'icon':'fas fa-mosque','color':'#e74c3c','title':'محاسبه زکات','text':'محاسبه ۲.۵٪ از ارزش کالاهای موجود','url':url_for('zakat_calculator'),'btn':'محاسبه','btn_color':'warning'},
-            {'icon':'fas fa-user-minus','color':'#c0392b','title':'بدهکاران','text': debtors_text,'url':url_for('debtors'),'btn':'مشاهده','btn_color':'danger'},
-            {'icon':'fas fa-file-import','color':'#264653','title':'وارد کردن از اکسل','text':'بارگذاری دسته‌ای کالاها از فایل Excel','url':url_for('products') ~ "#upload",'btn':'آپلود','btn_color':'info'},
-            {'icon':'fas fa-database','color':'#8e44ad','title':'پشتیبان‌گیری','text':'ذخیره و بازیابی اطلاعات فروشگاه','url':url_for('backup_page'),'btn':'مدیریت','btn_color':'secondary'},
-            {'icon':'fas fa-users-cog','color':'#2c3e50','title':'مدیریت کاربران','text':'مدیریت دسترسی کاربران سیستم','url':url_for('users_management'),'btn':'مدیریت','btn_color':'dark'},
-            {'icon':'fas fa-info-circle','color':'#16a085','title':'درباره برنامه','text':'اطلاعات فنی و راهنمای استفاده','url':url_for('about'),'btn':'مشاهده','btn_color':'success'}
-        ] %}
-        
-        {% for card in cards %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm card-hover text-center p-3">
-                <div class="card-body d-flex flex-column">
-                    <i class="{{ card.icon }} fa-2x mb-3" style="color: {{ card.color }};"></i>
-                    <h5 class="card-title fw-bold">{{ card.title }}</h5>
-                    <p class="card-text text-muted flex-grow-1">{{ card.text|safe }}</p>
-                    <a href="{{ card.url }}" class="btn btn-outline-{{ card.btn_color }} rounded-pill px-4 mt-auto">{{ card.btn }}</a>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <!-- بخش اطلاع‌رسانی -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="card bg-light border-0">
-                <div class="card-body text-center py-4">
-                    <h4 class="fw-bold mb-3">
-                        <i class="fas fa-headset me-2 text-primary"></i>پشتیبانی فنی
-                    </h4>
-                    <p class="lead mb-4">در صورت بروز هرگونه مشکل فنی یا نیاز به راهنمایی با پشتیبانی فنی تماس بگیرید</p>
-                    <div class="row justify-content-center">
-                        <div class="col-md-6">
-                            <div class="d-flex justify-content-around">
-                                <div class="text-center">
-                                    <i class="fas fa-phone fa-2x text-success mb-2"></i>
-                                    <h6>محمد عمر خاوران</h6>
-                                    <p class="mb-1">
-                                        <a href="tel:09159499928" class="text-decoration-none">09159499928</a>
-                                    </p>
-                                    <small class="text-muted">پشتیبانی فنی</small>
-                                </div>
-                                <div class="text-center">
-                                    <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                                    <h6>ساعات پاسخگویی</h6>
-                                    <p class="mb-1">۸ صبح تا ۱۰ شب</p>
-                                    <small class="text-muted">همه روزه</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- استایل‌های زیبا برای کارت‌ها -->
 <style>
-.card-hover {
-    transition: all 0.3s ease-in-out;
-    border-radius: 1rem;
-}
-.card-hover:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.15);
-}
-.stat-card {
-    transition: transform 0.3s ease;
-    border-radius: 12px;
-}
-.stat-card:hover {
-    transform: translateY(-3px);
-}
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #1d3557 0%, #e63946 100%);
-}
-.display-6 {
-    font-size: 2rem;
-    font-weight: 700;
-}
+.dashboard-wrap{max-width:1320px;margin:0 auto}.welcome-panel{position:relative;overflow:hidden;border-radius:25px;padding:30px 32px;color:#fff;background:linear-gradient(115deg,#173452 0%,#315b91 55%,#7866a9 100%);box-shadow:0 14px 35px #233f6526;margin-bottom:24px}.welcome-panel:before,.welcome-panel:after{content:"";position:absolute;border-radius:50%;background:#ffffff0d}.welcome-panel:before{width:260px;height:260px;left:-60px;top:-140px}.welcome-panel:after{width:180px;height:180px;left:180px;bottom:-130px}.welcome-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:20px}.welcome-panel h1{font-size:clamp(1.35rem,3vw,2rem);font-weight:900;margin:0 0 9px}.welcome-panel p{margin:0;color:#e0eaff;font-size:.94rem}.welcome-chip{background:#ffffff1c;border:1px solid #ffffff35;padding:11px 16px;border-radius:15px;white-space:nowrap;font-weight:700}.section-title{display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:900;color:#2d4565;margin:25px 2px 14px}.section-title i{color:#6687b8}.quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.quick-card{min-height:142px;display:flex;flex-direction:column;justify-content:space-between;padding:19px;border-radius:19px;text-decoration:none;color:#2d4565;background:#fff;border:1px solid #e8eef7;box-shadow:0 8px 22px #263f6010;transition:.2s}.quick-card:hover{transform:translateY(-4px);box-shadow:0 13px 28px #263f601b;color:#315b91}.quick-icon{width:47px;height:47px;display:grid;place-items:center;border-radius:15px;font-size:1.25rem}.quick-card strong{font-size:.95rem;font-weight:850;margin-top:15px}.quick-card small{color:#8290a4;font-size:.73rem;margin-top:4px}.tone-blue .quick-icon{background:#e8f1ff;color:#4778b7}.tone-green .quick-icon{background:#e4f7ef;color:#2b9a75}.tone-orange .quick-icon{background:#fff1df;color:#d98a36}.tone-purple .quick-icon{background:#f0eaff;color:#8667ba}.tone-pink .quick-icon{background:#fff0f2;color:#d45e79}.tone-teal .quick-icon{background:#e2f7f7;color:#26989a}.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.summary-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e8eef7;border-radius:18px;padding:18px;box-shadow:0 7px 20px #263f600d}.summary-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#fff0f2;color:#d95d70;font-size:1.2rem}.summary-card strong{display:block;font-size:1.55rem;color:#263e5b;font-weight:900;line-height:1.2}.summary-card span{display:block;color:#8794a7;font-size:.76rem;margin-top:5px}.dashboard-note{margin-top:22px;padding:16px 18px;border-radius:16px;background:linear-gradient(100deg,#fff8e9,#fff);border:1px solid #f5e7c9;color:#806638;font-size:.82rem;display:flex;gap:10px;align-items:center}.dashboard-note i{font-size:1.1rem;color:#d99b3e}
+@media(max-width:900px){.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.welcome-panel{padding:22px 18px;border-radius:20px}.welcome-content{align-items:flex-start;flex-direction:column}.welcome-chip{font-size:.75rem;padding:8px 12px}.quick-grid{gap:10px}.quick-card{min-height:126px;padding:14px;border-radius:16px}.quick-icon{width:42px;height:42px}.quick-card strong{font-size:.85rem}.quick-card small{font-size:.68rem}.summary-grid{grid-template-columns:1fr;gap:10px}.summary-card{padding:14px}.section-title{font-size:.95rem;margin-top:21px}}
 </style>
-
-<script>
-// لود آمار سریع
-document.addEventListener('DOMContentLoaded', function() {
-    loadQuickStats();
-});
-
-function loadQuickStats() {
-    // تعداد کالاها
-    fetch('/api/search_products_all?q=')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('productsCount').textContent = data.length;
-        })
-        .catch(error => {
-            console.error('Error loading products count:', error);
-        });
-
-    // تعداد فاکتورهای امروز
-    const today = new Date().toLocaleDateString('fa-IR');
-    fetch('/api/shop_expenses?start_date=' + today + '&end_date=' + today)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('todayInvoices').textContent = data.length;
-        })
-        .catch(error => {
-            console.error('Error loading today invoices:', error);
-        });
-
-    // کالاهای اتمام موجودی
-    fetch('/api/search_products_all?q=')
-        .then(response => response.json())
-        .then(data => {
-            const outOfStock = data.filter(product => product.stock === 0);
-            document.getElementById('outOfStockCount').textContent = outOfStock.length;
-        })
-        .catch(error => {
-            console.error('Error loading out of stock count:', error);
-        });
-}
-
-// به‌روزرسانی هر 30 ثانیه
-setInterval(loadQuickStats, 30000);
-</script>
+<div class="dashboard-wrap">
+  <section class="welcome-panel"><div class="welcome-content"><div><h1>خوش آمدید، {{ session.username }} 👋</h1><p>به پنل مدیریت فروشگاه سوئد یدک خوش آمدید؛ همه بخش‌های فروشگاه از اینجا در دسترس شماست.</p></div><div class="welcome-chip"><i class="fas fa-shield-halved ms-2"></i>سامانه مدیریت فروش و قطعات اسکانیا</div></div></section>
+  <div class="section-title"><i class="fas fa-bolt"></i>دسترسی سریع</div>
+  <section class="quick-grid">
+    <a class="quick-card tone-blue" href="{{ url_for('invoice') }}"><span class="quick-icon"><i class="fas fa-file-circle-plus"></i></span><div><strong>صدور فاکتور جدید</strong><small>ثبت فروش و چاپ فاکتور</small></div></a>
+    <a class="quick-card tone-green" href="{{ url_for('products') }}"><span class="quick-icon"><i class="fas fa-boxes-stacked"></i></span><div><strong>مدیریت کالاها</strong><small>قیمت، موجودی و مشخصات کالا</small></div></a>
+    <a class="quick-card tone-orange" href="{{ url_for('invoices') }}"><span class="quick-icon"><i class="fas fa-file-invoice"></i></span><div><strong>فاکتورهای فروش</strong><small>مشاهده و پیگیری فاکتورها</small></div></a>
+    <a class="quick-card tone-purple" href="{{ url_for('reports') }}"><span class="quick-icon"><i class="fas fa-chart-line"></i></span><div><strong>گزارش‌های فروش</strong><small>بررسی عملکرد فروشگاه</small></div></a>
+    <a class="quick-card tone-teal" href="{{ url_for('stock_report') }}"><span class="quick-icon"><i class="fas fa-warehouse"></i></span><div><strong>موجودی انبار</strong><small>بررسی کالاهای موجود</small></div></a>
+    <a class="quick-card tone-pink" href="{{ url_for('debtors') }}"><span class="quick-icon"><i class="fas fa-user-clock"></i></span><div><strong>مدیریت بدهکاران</strong><small>پیگیری مانده حساب مشتریان</small></div></a>
+    <a class="quick-card tone-blue" href="{{ url_for('purchase_invoices_list') }}"><span class="quick-icon"><i class="fas fa-cart-flatbed"></i></span><div><strong>فاکتورهای خرید</strong><small>مدیریت خرید و تأمین کالا</small></div></a>
+    <a class="quick-card tone-green" href="{{ url_for('backup_page') }}"><span class="quick-icon"><i class="fas fa-cloud-arrow-up"></i></span><div><strong>پشتیبان‌گیری</strong><small>مدیریت نسخه پشتیبان اطلاعات</small></div></a>
+  </section>
+  <div class="section-title"><i class="fas fa-chart-simple"></i>نمای کلی حساب‌ها</div>
+  <section class="summary-grid">
+    <div class="summary-card"><div class="summary-icon"><i class="fas fa-user-clock"></i></div><div><strong>{{ debtors_count|default(0) }}</strong><span>فاکتور دارای مانده بدهی</span></div></div>
+    <div class="summary-card"><div class="summary-icon" style="background:#e8f1ff;color:#4778b7"><i class="fas fa-box-open"></i></div><div><strong>مدیریت کالا</strong><span>دسترسی به قیمت‌ها و موجودی محصولات</span></div></div>
+    <div class="summary-card"><div class="summary-icon" style="background:#e4f7ef;color:#2b9a75"><i class="fas fa-chart-pie"></i></div><div><strong>گزارش‌گیری</strong><span>گزارش فروش و حسابداری در پنل</span></div></div>
+  </section>
+  <div class="dashboard-note"><i class="fas fa-circle-info"></i><span>برای دسترسی به سایر امکانات، دکمه منوی سه‌خط بالا را انتخاب کنید. در موبایل نیز منو از سمت چپ باز می‌شود.</span></div>
+</div>
 {% endblock %}
