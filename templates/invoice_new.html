@@ -641,4 +641,53 @@ document.getElementById('applyConvertedPrice').addEventListener('click', functio
     }
 });
 </script>
+
+<style id="swed-responsive-polish">
+:root{--sw-navy:#142b4a;--sw-red:#df3444;--sw-ink:#263449;--sw-muted:#718096;--sw-line:#e7edf4;--sw-soft:#f4f7fb;--sw-shadow:0 12px 32px rgba(20,43,74,.08)}
+body{background:#f4f7fb!important;color:var(--sw-ink)}
+.container,.container-fluid{max-width:1500px}
+.card{border:1px solid var(--sw-line)!important;border-radius:18px!important;box-shadow:var(--sw-shadow)!important;overflow:hidden;margin-bottom:22px;transition:box-shadow .2s}
+.card:hover{transform:none!important;box-shadow:0 15px 36px rgba(20,43,74,.11)!important}
+.card-header{padding:15px 18px!important;min-height:54px;background:linear-gradient(115deg,var(--sw-navy),#274e78)!important;color:#fff!important;border:0!important}
+.card-header h4,.card-header h5,.card-header h6{font-weight:800;margin:0}
+.card-body{padding:clamp(14px,2vw,24px)!important}
+.btn{border-radius:10px!important;font-weight:650;min-height:39px}
+.btn-primary,.btn-scania{background:linear-gradient(120deg,var(--sw-red),#b91f35)!important;border:0!important}
+.form-control,.form-select{border:1px solid #dce4ee!important;border-radius:10px!important;min-height:43px;padding:9px 12px!important;background-color:#fff}
+.form-control:focus,.form-select:focus{border-color:#e34b59!important;box-shadow:0 0 0 .2rem rgba(223,52,68,.12)!important}
+.table-responsive{border-radius:12px;max-width:100%;-webkit-overflow-scrolling:touch}
+.table{margin-bottom:0;vertical-align:middle}
+.table thead th{background:#eef3f9;color:#29415f;font-weight:800;white-space:nowrap;border-bottom:1px solid #dfe7f0;padding:13px 12px}
+.table tbody td{padding:12px;border-color:#edf1f6;vertical-align:middle}
+.table tbody tr:hover{background:#f8fafd}
+.nav-tabs{gap:6px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:4px 3px 10px;border-bottom:1px solid var(--sw-line);scrollbar-width:thin}
+.nav-tabs .nav-link{border:0!important;border-radius:11px!important;color:#52647a;font-weight:750;padding:11px 15px;background:#edf2f8}
+.nav-tabs .nav-link.active{color:#fff!important;background:linear-gradient(120deg,var(--sw-navy),#315d88)!important;box-shadow:0 5px 14px rgba(20,43,74,.15)}
+.tab-content{border:0!important;background:transparent;padding:14px 0!important}
+.modal-content{border:0;border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(10,25,45,.2)}
+.modal-header{background:linear-gradient(120deg,var(--sw-navy),#315d88);color:#fff;border:0}
+.modal-header .btn-close{filter:invert(1)}
+.badge{border-radius:8px;padding:.45em .65em}
+.invoice-paper{border:1px solid var(--sw-line)!important;border-radius:18px!important;box-shadow:var(--sw-shadow)!important;padding:clamp(12px,2vw,24px)!important;background:#fff}
+.invoice-header{padding:14px 8px 18px;border-bottom:2px dashed #dce4ee!important}
+.invoice-header h4{font-weight:900!important;color:var(--sw-red)!important}
+.invoice-items{max-height:none!important;overflow:visible!important}
+.payment-section{border:1px solid var(--sw-line);background:#f6f8fc!important;border-radius:14px!important}
+input[type=number],input.input-number{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+@media(max-width:767.98px){
+ body{font-size:14px}.container,.container-fluid{padding-left:12px!important;padding-right:12px!important}
+ .card{border-radius:14px!important;margin-bottom:15px}.card-header{padding:12px 14px!important}
+ .card-body{padding:13px!important}.table-responsive{margin:0 -2px;width:calc(100% + 4px)}
+ .table{min-width:650px;font-size:13px}.table thead th,.table tbody td{padding:10px 9px}
+ .nav-tabs .nav-link{padding:9px 12px;font-size:13px}
+ .row>[class*=col-]{margin-bottom:8px}.btn{font-size:13px;padding:8px 11px}
+ .modal-dialog{margin:9px}.modal-body{padding:14px!important}.modal-footer{gap:7px}
+ .invoice-paper{padding:12px!important;min-height:0!important}.invoice-header{margin-bottom:12px}
+ .invoice-items{overflow-x:auto!important}.invoice-items .table{min-width:560px}
+ .payment-section{padding:12px!important;margin-top:14px!important}
+ h3{font-size:1.18rem}h4{font-size:1.08rem}h5{font-size:1rem}
+}
+@media(min-width:768px) and (max-width:1100px){.table{font-size:13px}.card-body{padding:17px!important}}
+@media print{body{background:#fff!important}.card{box-shadow:none!important;border:0!important}.btn,.nav-tabs,.navbar,.app-drawer,.drawer-backdrop{display:none!important}}
+</style>
 {% endblock %}
