@@ -396,16 +396,17 @@ def clean_numeric_value(val):
         return 0.0
 
 def get_db():
-    """Return a database connection with the same execute() API on SQLite and Neon."""
+    """Return an adapter connection; never expose a raw psycopg2 connection to routes."""
     if USE_POSTGRES:
         from db_backend import connect_postgres, Connection as PostgresConnection
         db = connect_postgres(DATABASE_URL)
-        # Defensive compatibility: some older deployments returned the raw
-        # psycopg2 connection. Wrap it so existing SQLite-style conn.execute()
-        # calls continue to work consistently.
-        if not callable(getattr(db, 'execute', None)):
-            db = PostgresConnection(db)
-        return db
+        # Some deployments may still have an older db_backend.py where
+        # connect_postgres() returns psycopg2's raw connection. Always normalize
+        # it here, even if that older connection happens to expose other methods.
+        if isinstance(db, PostgresConnection):
+            return db
+        raw = getattr(db, 'raw', db)
+        return PostgresConnection(raw)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
