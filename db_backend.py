@@ -1,4 +1,5 @@
 """PostgreSQL compatibility layer for the application's SQLite-style SQL calls."""
+DB_ADAPTER_VERSION = "2026-11-05-login-hotfix-2"
 import re, sqlite3
 from psycopg2 import connect
 from psycopg2.extras import DictCursor
@@ -57,10 +58,12 @@ class Connection:
     def commit(self): self.raw.commit()
     def rollback(self): self.raw.rollback()
     def close(self): self.raw.close()
+    def __getattr__(self, name): return getattr(self.raw, name)
 
 
 def connect_postgres(url):
-    raw=connect(url, cursor_factory=DictCursor, sslmode='require', connect_timeout=15)
+    raw = connect(url, cursor_factory=DictCursor, sslmode='require', connect_timeout=15)
+    # Always return our adapter, not psycopg2's raw connection.
     return Connection(raw)
 
 def init_postgres_schema(url):
