@@ -1,0 +1,579 @@
+{% extends "base.html" %}
+{% block title %}گزارش‌های مالی - سوئد یدک{% endblock %}
+{% block content %}
+<style>
+    .stat-card {
+        transition: transform 0.3s ease;
+        border-radius: 12px;
+        height: 100%;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15)!important;
+    }
+    .display-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+    .period-header {
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 20px;
+    }
+    .chart-container {
+        height: 300px;
+        margin-top: 20px;
+    }
+    .progress-custom {
+        height: 12px;
+        border-radius: 6px;
+    }
+    .report-section {
+        margin-bottom: 30px;
+    }
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
+    .info-badge {
+        font-size: 0.7rem;
+        margin-right: 5px;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- هدر صفحه -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold">
+            <i class="fas fa-chart-line me-2 text-primary"></i> گزارش‌های مالی جامع
+        </h1>
+        <div class="text-muted">
+            <i class="fas fa-calendar-alt me-2"></i>
+            {{ current_datetime }}
+        </div>
+    </div>
+
+    <!-- اطلاعیه مهم -->
+    <div class="alert alert-info mb-4">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>توجه:</strong> کلیه آمار و ارقام زیر فقط مربوط به فاکتورهای <strong>کاملاً تسویه شده</strong> می‌باشد.
+    </div>
+
+    <!-- گزارش امروز -->
+    <div class="report-section">
+        <div class="card mb-4 shadow-sm border-0 period-header bg-gradient-primary text-white">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sun me-2"></i> گزارشات مالی امروز - {{ today_date }} 
+                    <span class="info-badge badge bg-light text-dark">فقط فاکتورهای تسویه شده</span>
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-file-invoice-dollar fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">تعداد فاکتورها</h5>
+                        <p class="display-number text-primary mb-0">{{ today_invoice_count }}</p>
+                        <small class="text-muted">فاکتور تسویه شده امروز</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-success">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-coins fa-2x text-success"></i>
+                        </div>
+                        <h5 class="card-title">فروش امروز</h5>
+                        <p class="display-number text-success mb-0">{{ "{:,.0f}".format(today_sales) }} تومان</p>
+                        <small class="text-muted">مجموع فروش تسویه شده امروز</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-danger">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-chart-line fa-2x text-danger"></i>
+                        </div>
+                        <h5 class="card-title">سود امروز</h5>
+                        <p class="display-number text-danger mb-0">{{ "{:,.0f}".format(today_profit) }} تومان</p>
+                        <small class="text-muted">سود خالص فاکتورهای تسویه شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-info">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-check-circle fa-2x text-info"></i>
+                        </div>
+                        <h5 class="card-title">نرخ تسویه</h5>
+                        <p class="display-number text-info mb-0">{{ today_paid_count }}/{{ today_invoice_count }}</p>
+                        <div class="mt-2">
+                            {% if today_invoice_count > 0 %}
+                                {% set paid_percent = (today_paid_count / today_invoice_count * 100) | round(0) %}
+                                <div class="progress progress-custom">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ paid_percent }}%" aria-valuenow="{{ paid_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="mt-1 d-block">{{ paid_percent }}% نرخ تسویه</small>
+                            {% else %}
+                                <small class="text-muted">فاکتوری امروز صادر نشده</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارش ماه جاری -->
+    <div class="report-section">
+        <div class="card mb-4 shadow-sm border-0 period-header bg-gradient-success text-white">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-calendar-week me-2"></i> گزارشات مالی ماه جاری - {{ current_month }}
+                    <span class="info-badge badge bg-light text-dark">فقط فاکتورهای تسویه شده</span>
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-file-invoice fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">تعداد فاکتورها</h5>
+                        <p class="display-number text-primary mb-0">{{ month_invoice_count }}</p>
+                        <small class="text-muted">فاکتور تسویه شده این ماه</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-success">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-hand-holding-usd fa-2x text-success"></i>
+                        </div>
+                        <h5 class="card-title">فروش ماه</h5>
+                        <p class="display-number text-success mb-0">{{ "{:,.0f}".format(month_sales) }} تومان</p>
+                        <small class="text-muted">مجموع فروش تسویه شده این ماه</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-danger">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-percentage fa-2x text-danger"></i>
+                        </div>
+                        <h5 class="card-title">سود ماه</h5>
+                        <p class="display-number text-danger mb-0">{{ "{:,.0f}".format(month_profit) }} تومان</p>
+                        <small class="text-muted">سود خالص فاکتورهای تسویه شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-info">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-balance-scale fa-2x text-info"></i>
+                        </div>
+                        <h5 class="card-title">نرخ تسویه</h5>
+                        <p class="display-number text-info mb-0">
+                            {% if month_invoice_count > 0 %}
+                                {{ (month_paid_count / month_invoice_count * 100) | round(0) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </p>
+                        <div class="mt-2">
+                            {% if month_invoice_count > 0 %}
+                                {% set month_paid_percent = (month_paid_count / month_invoice_count * 100) | round(0) %}
+                                <div class="progress progress-custom">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ month_paid_percent }}%" aria-valuenow="{{ month_paid_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="mt-1 d-block">{{ month_paid_count }} فاکتور تسویه شده</small>
+                            {% else %}
+                                <small class="text-muted">فاکتوری این ماه صادر نشده</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارش سال جاری -->
+    <div class="report-section">
+        <div class="card mb-4 shadow-sm border-0 period-header bg-gradient-danger text-white">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-calendar-alt me-2"></i> گزارشات مالی سال جاری - {{ current_year }}
+                    <span class="info-badge badge bg-light text-dark">فقط فاکتورهای تسویه شده</span>
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-database fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">تعداد کل فاکتورها</h5>
+                        <p class="display-number text-primary mb-0">{{ year_invoice_count }}</p>
+                        <small class="text-muted">فاکتور تسویه شده امسال</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-success">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-money-bill-wave fa-2x text-success"></i>
+                        </div>
+                        <h5 class="card-title">فروش سال</h5>
+                        <p class="display-number text-success mb-0">{{ "{:,.0f}".format(year_sales) }} تومان</p>
+                        <small class="text-muted">مجموع فروش تسویه شده امسال</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-danger">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-chart-bar fa-2x text-danger"></i>
+                        </div>
+                        <h5 class="card-title">سود سال</h5>
+                        <p class="display-number text-danger mb-0">{{ "{:,.0f}".format(year_profit) }} تومان</p>
+                        <small class="text-muted">سود خالص فاکتورهای تسویه شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card border-warning">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-user-minus fa-2x text-warning"></i>
+                        </div>
+                        <h5 class="card-title">تعداد بدهکاران</h5>
+                        <p class="display-number text-warning mb-0">{{ debtors_count }}</p>
+                        <small class="text-muted d-block mt-1">به مبلغ {{ "{:,.0f}".format(total_debt) }} تومان</small>
+                        <small class="text-muted">فاکتورهای تسویه نشده</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارشات کلی -->
+    <div class="report-section">
+        <div class="card mb-4 shadow-sm border-0 period-header bg-gradient-info text-white">
+            <div class="card-body">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i> گزارشات کلی سیستم از ابتدا
+                    <span class="info-badge badge bg-light text-dark">فقط فاکتورهای تسویه شده</span>
+                </h4>
+            </div>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-4 mb-4">
+                <div class="card stat-card border-success">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-cash-register fa-2x text-success"></i>
+                        </div>
+                        <h5 class="card-title">کل فروش تاکنون</h5>
+                        <p class="display-number text-success mb-0">{{ "{:,.0f}".format(total_sales) }} تومان</p>
+                        <small class="text-muted">مجموع تمام فروش‌های تسویه شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card stat-card border-danger">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-trophy fa-2x text-danger"></i>
+                        </div>
+                        <h5 class="card-title">کل سود تاکنون</h5>
+                        <p class="display-number text-danger mb-0">{{ "{:,.0f}".format(total_profit) }} تومان</p>
+                        <small class="text-muted">سود خالص فاکتورهای تسویه شده</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card stat-card border-primary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-file-alt fa-2x text-primary"></i>
+                        </div>
+                        <h5 class="card-title">تعداد کل فاکتورها</h5>
+                        <p class="display-number text-primary mb-0">{{ total_invoices }}</p>
+                        <small class="text-muted">فاکتورهای تسویه شده صادر شده</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارش روزانه 30 روز اخیر -->
+    <div class="report-section">
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <i class="fas fa-calendar-day me-2"></i> گزارش روزانه (۳۰ روز اخیر) - فقط فاکتورهای تسویه شده
+            </div>
+            <div class="card-body">
+                {% if daily_sales %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>تاریخ</th>
+                                <th class="text-center">تعداد فاکتور</th>
+                                <th class="text-end">مبلغ فروش (تومان)</th>
+                                <th class="text-end">سود (تومان)</th>
+                                <th class="text-end">میانگین هر فاکتور</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in daily_sales %}
+                            <tr>
+                                <td><strong>{{ day.date_jalali }}</strong></td>
+                                <td class="text-center">{{ day.invoice_count }}</td>
+                                <td class="text-end">{{ "{:,.0f}".format(day.total_sales) }}</td>
+                                <td class="text-end">{{ "{:,.0f}".format(day.total_profit) }}</td>
+                                <td class="text-end">
+                                    {% if day.invoice_count > 0 %}
+                                        {{ "{:,.0f}".format(day.total_sales / day.invoice_count) }}
+                                    {% else %}
+                                        ۰
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-info">
+                            <tr>
+                                <td><strong>جمع کل</strong></td>
+                                <td class="text-center"><strong>{{ daily_sales|sum(attribute='invoice_count') }}</strong></td>
+                                <td class="text-end"><strong>{{ "{:,.0f}".format(daily_sales|sum(attribute='total_sales')) }}</strong></td>
+                                <td class="text-end"><strong>{{ "{:,.0f}".format(daily_sales|sum(attribute='total_profit')) }}</strong></td>
+                                <td class="text-end">
+                                    {% set total_invoices_30 = daily_sales|sum(attribute='invoice_count') %}
+                                    {% if total_invoices_30 > 0 %}
+                                        <strong>{{ "{:,.0f}".format(daily_sales|sum(attribute='total_sales') / total_invoices_30) }}</strong>
+                                    {% else %}
+                                        <strong>۰</strong>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-4">هیچ فاکتور تسویه شده‌ای برای نمایش وجود ندارد.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارش ماهانه -->
+    <div class="report-section">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <i class="fas fa-calendar-month me-2"></i> گزارش ماهانه - فقط فاکتورهای تسویه شده
+            </div>
+            <div class="card-body">
+                {% if monthly_sales %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ماه</th>
+                                <th class="text-center">تعداد فاکتور</th>
+                                <th class="text-end">مبلغ فروش (تومان)</th>
+                                <th class="text-end">سود (تومان)</th>
+                                <th class="text-end">میانگین ماهانه</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month in monthly_sales %}
+                            <tr>
+                                <td><strong>{{ month.month }}</strong></td>
+                                <td class="text-center">{{ month.invoice_count }}</td>
+                                <td class="text-end">{{ "{:,.0f}".format(month.total_sales) }}</td>
+                                <td class="text-end">{{ "{:,.0f}".format(month.total_profit) }}</td>
+                                <td class="text-end">
+                                    {% if month.invoice_count > 0 %}
+                                        {{ "{:,.0f}".format(month.total_sales / month.invoice_count) }}
+                                    {% else %}
+                                        ۰
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-info">
+                            <tr>
+                                <td><strong>جمع کل</strong></td>
+                                <td class="text-center"><strong>{{ monthly_sales|sum(attribute='invoice_count') }}</strong></td>
+                                <td class="text-end"><strong>{{ "{:,.0f}".format(monthly_sales|sum(attribute='total_sales')) }}</strong></td>
+                                <td class="text-end"><strong>{{ "{:,.0f}".format(monthly_sales|sum(attribute='total_profit')) }}</strong></td>
+                                <td class="text-end">
+                                    {% set total_invoices_months = monthly_sales|sum(attribute='invoice_count') %}
+                                    {% if total_invoices_months > 0 %}
+                                        <strong>{{ "{:,.0f}".format(monthly_sales|sum(attribute='total_sales') / total_invoices_months) }}</strong>
+                                    {% else %}
+                                        <strong>۰</strong>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-4">هیچ فاکتور تسویه شده‌ای برای نمایش وجود ندارد.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- خلاصه عملکرد -->
+    <div class="report-section">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-chart-bar me-2"></i> خلاصه عملکرد (فقط فاکتورهای تسویه شده)
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-primary">میانگین فروش روزانه</h5>
+                            <h4 class="text-primary">
+                                {% if daily_sales %}
+                                    {{ "{:,.0f}".format(daily_sales|sum(attribute='total_sales') / daily_sales|length) }} تومان
+                                {% else %}
+                                    ۰ تومان
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">فقط فاکتورهای تسویه شده</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-success">میانگین سود روزانه</h5>
+                            <h4 class="text-success">
+                                {% if daily_sales %}
+                                    {{ "{:,.0f}".format(daily_sales|sum(attribute='total_profit') / daily_sales|length) }} تومان
+                                {% else %}
+                                    ۰ تومان
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">فقط فاکتورهای تسویه شده</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-info">میانگین فاکتور روزانه</h5>
+                            <h4 class="text-info">
+                                {% if daily_sales %}
+                                    {{ "%.1f"|format(daily_sales|sum(attribute='invoice_count') / daily_sales|length) }}
+                                {% else %}
+                                    ۰
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">فقط فاکتورهای تسویه شده</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-warning">نرخ رشد</h5>
+                            <h4 class="text-warning">
+                                {% if monthly_sales|length > 1 %}
+                                    {% set last_month = monthly_sales[0].total_sales %}
+                                    {% set prev_month = monthly_sales[1].total_sales %}
+                                    {% if prev_month > 0 %}
+                                        {{ "%.1f"|format((last_month - prev_month) / prev_month * 100) }}%
+                                    {% else %}
+                                        ۱۰۰%
+                                    {% endif %}
+                                {% else %}
+                                    جدید
+                                {% endif %}
+                            </h4>
+                            <small class="text-muted">بر اساس فاکتورهای تسویه شده</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- گزارش بدهکاران -->
+    <div class="report-section">
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-exclamation-triangle me-2"></i> گزارش فاکتورهای تسویه نشده
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-danger">تعداد فاکتورهای تسویه نشده</h5>
+                            <h4 class="text-danger">{{ debtors_count }} فاکتور</h4>
+                            <small class="text-muted">فاکتورهای در انتظار پرداخت</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-danger">مجموع مبالغ معوق</h5>
+                            <h4 class="text-danger">{{ "{:,.0f}".format(total_debt) }} تومان</h4>
+                            <small class="text-muted">کل مبالغ پرداخت نشده</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('debtors') }}" class="btn btn-warning">
+                        <i class="fas fa-user-minus me-2"></i>مشاهده لیست کامل بدهکاران
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- لینک به گزارشات تفصیلی -->
+    <div class="text-center mt-4 p-4 bg-light rounded">
+        <h5 class="mb-4">دسترسی به گزارشات تفصیلی</h5>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('debtors') }}" class="btn btn-warning px-4 py-3">
+                <i class="fas fa-user-minus me-2"></i>گزارش بدهکاران
+            </a>
+            <a href="{{ url_for('stock_report') }}" class="btn btn-info px-4 py-3">
+                <i class="fas fa-warehouse me-2"></i>گزارش موجودی کالاها
+            </a>
+            <a href="{{ url_for('purchase_invoices_list') }}" class="btn btn-primary px-4 py-3">
+                <i class="fas fa-shopping-cart me-2"></i>فاکتورهای خرید
+            </a>
+            <a href="{{ url_for('supplier_debts') }}" class="btn btn-secondary px-4 py-3">
+                <i class="fas fa-hand-holding-usd me-2"></i>بدهی به تامین‌کنندگان
+            </a>
+            <a href="{{ url_for('zakat_calculator') }}" class="btn btn-danger px-4 py-3">
+                <i class="fas fa-mosque me-2"></i>محاسبه زکات
+            </a>
+            <a href="{{ url_for('backup_page') }}" class="btn btn-dark px-4 py-3">
+                <i class="fas fa-database me-2"></i>پشتیبان‌گیری
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

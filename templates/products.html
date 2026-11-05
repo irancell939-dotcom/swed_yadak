@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+{% block title %}مدیریت کالاها - سوئد یدک{% endblock %}
+{% block content %}
+<style>
+.input-number {
+    font-variant-numeric: tabular-nums;
+    direction: ltr !important;
+    text-align: left !important;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+.number-in-words {
+    font-size: 0.85em;
+    min-height: 1.2em;
+    color: #6c757d;
+}
+.tab-content {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    padding: 20px;
+    border-radius: 0 0 8px 8px;
+}
+.nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+}
+.nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.nav-tabs .nav-link.active {
+    color: #495057;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+.usd-display {
+    font-size: 0.85em;
+    color: #28a745;
+    font-weight: 500;
+}
+</style>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <ul class="nav nav-tabs" id="productTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if not edit_product %}active{% endif %}" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button">لیست کالاها ({{ products|length }})</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button">
+                    افزودن کالای جدید
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if edit_product %}active{% endif %}" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit" type="button" {% if not edit_product %}style="display:none"{% endif %}>
+                    ویرایش کالا
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button">آپلود اکسل</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="productTabsContent">
+            <!-- تب لیست کالاها -->
+            <div class="tab-pane fade {% if not edit_product %}show active{% endif %}" id="list" role="tabpanel">
+                <div class="mb-3">
+                    <input type="text" id="globalSearch" class="form-control" placeholder="جستجوی زنده در لیست کالاها...">
+                </div>
+                {% if products %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>نام کالا</th>
+                                <th>SKU</th>
+                                <th>قیمت خرید (تومان)</th>
+                                <th>قیمت خرید (دلار)</th>
+                                <th>قیمت فروش</th>
+                                <th>موجودی</th>
+                                <th>انبار</th>
+                                <th class="text-center">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in products %}
+                            <tr>
+                                <td>{{ p.name }}</td>
+                                <td>{{ p.sku or '—' }}</td>
+                                <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }}</td>
+                                <td>{{ "{:,.2f}".format(p.buy_price_usd) if p.buy_price_usd else '—' }}</td>
+                                <td>{{ "{:,.0f}".format(p.sell_price) }} تومان</td>
+                                <td>{{ p.stock }}</td>
+                                <td>{{ p.warehouse or '—' }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-warning me-1" onclick="editProduct({{ p.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteProduct({{ p.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">کالایی ثبت نشده است.</p>
+                {% endif %}
+            </div>
+
+            <!-- تب افزودن کالای جدید -->
+            <div class="tab-pane fade" id="add" role="tabpanel">
+                <form method="POST" id="addProductForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">نام کالا <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">شناسه (SKU) - اختیاری</label>
+                            <input type="text" class="form-control" name="sku">
+                        </div>
+                    </div>
+
+                    <!-- ✅ محاسبه از تومان -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-calculator me-2"></i> محاسبه قیمت فروش از قیمت خرید تومانی
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-end g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">قیمت خرید (تومان)</label>
+                                    <input type="text" class="form-control input-number" id="addBuyPriceToman"
+                                           name="buy_price_tomans"
+                                           placeholder="مثال: 236000"
+                                           oninput="updateNumberInWords('addBuyPriceToman', 'addBuyPriceTomanWords')">
+                                    <div id="addBuyPriceTomanWords" class="number-in-words mt-1"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">درصد سود (%)</label>
+                                    <input type="text" class="form-control input-number" id="addProfitPercent" placeholder="مثال: 20">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="calculateSellPriceFromToman('add')">
+                                        <i class="fas fa-calculator me-1"></i> محاسبه
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">قیمت فروش (تومان)</label>
+                                    <input type="text" class="form-control input-number" id="addSellPrice"
+                                           name="sell_price"
+                                           placeholder="محاسبه می‌شود..."
+                                           oninput="updateNumberInWords('addSellPrice', 'addSellPriceWords')">
+                                    <div id="addSellPriceWords" class="number-in-words mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ محاسبه از دلار -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-dollar-sign me-2"></i> محاسبه قیمت فروش از قیمت خرید دلاری
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-end g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">قیمت خرید (دلار)</label>
+                                    <input type="text" class="form-control input-number" id="addBuyPriceUsd"
+                                           name="buy_price_usd"
+                                           placeholder="مثال: 50.26"
+                                           oninput="updateUsdDisplay('addBuyPriceUsd', 'addBuyPriceUsdDisplay')">
+                                    <div id="addBuyPriceUsdDisplay" class="usd-display mt-1"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-success w-100" onclick="calculateSellPriceFromUsd('add')">
+                                        <i class="fas fa-calculator me-1"></i> محاسبه
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">نتیجه محاسبه</label>
+                                    <div id="addUsdResult" class="form-control-plaintext bg-light p-2 rounded">
+                                        نتیجه اینجا نمایش داده می‌شود.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- سایر فیلدها -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">موجودی <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control input-number" name="stock"
+                                   value="0"
+                                   placeholder="مثال: 10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">آدرس انبار - اختیاری</label>
+                            <input type="text" class="form-control" name="warehouse">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">توضیحات - اختیاری</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="showListTab()">
+                            <i class="fas fa-arrow-right me-1"></i> بازگشت به لیست
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i> افزودن کالا
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- تب ویرایش کالا -->
+            <div class="tab-pane fade {% if edit_product %}show active{% endif %}" id="edit" role="tabpanel">
+                {% if edit_product %}
+                <form method="POST" id="editProductForm" action="{{ url_for('update_product', product_id=edit_product.id) }}">
+                    <input type="hidden" name="product_id" value="{{ edit_product.id }}">
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">نام کالا <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="name" 
+                                   value="{{ edit_product.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">شناسه (SKU) - اختیاری</label>
+                            <input type="text" class="form-control" name="sku" 
+                                   value="{{ edit_product.sku or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- ✅ محاسبه از تومان -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <i class="fas fa-calculator me-2"></i> محاسبه قیمت فروش از قیمت خرید تومانی
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-end g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">قیمت خرید (تومان)</label>
+                                    <input type="text" class="form-control input-number" id="editBuyPriceToman"
+                                           name="buy_price_tomans"
+                                           value="{% if edit_product and edit_product.buy_price_tomans %}{{ '{:,.0f}'.format(edit_product.buy_price_tomans) }}{% endif %}"
+                                           placeholder="مثال: 236000"
+                                           oninput="updateNumberInWords('editBuyPriceToman', 'editBuyPriceTomanWords')">
+                                    <div id="editBuyPriceTomanWords" class="number-in-words mt-1"></div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">درصد سود (%)</label>
+                                    <input type="text" class="form-control input-number" id="editProfitPercent" placeholder="مثال: 20">
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-primary w-100" onclick="calculateSellPriceFromToman('edit')">
+                                        <i class="fas fa-calculator me-1"></i> محاسبه
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">قیمت فروش (تومان)</label>
+                                    <input type="text" class="form-control input-number" id="editSellPrice"
+                                           name="sell_price"
+                                           value="{% if edit_product and edit_product.sell_price %}{{ '{:,.0f}'.format(edit_product.sell_price) }}{% endif %}"
+                                           placeholder="محاسبه می‌شود..."
+                                           oninput="updateNumberInWords('editSellPrice', 'editSellPriceWords')">
+                                    <div id="editSellPriceWords" class="number-in-words mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ محاسبه از دلار -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <i class="fas fa-dollar-sign me-2"></i> محاسبه قیمت فروش از قیمت خرید دلاری
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-end g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">قیمت خرید (دلار)</label>
+                                    <input type="text" class="form-control input-number" id="editBuyPriceUsd"
+                                           name="buy_price_usd"
+                                           value="{% if edit_product and edit_product.buy_price_usd %}{{ '{:,.2f}'.format(edit_product.buy_price_usd) }}{% endif %}"
+                                           placeholder="مثال: 50.26"
+                                           oninput="updateUsdDisplay('editBuyPriceUsd', 'editBuyPriceUsdDisplay')">
+                                    <div id="editBuyPriceUsdDisplay" class="usd-display mt-1"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-success w-100" onclick="calculateSellPriceFromUsd('edit')">
+                                        <i class="fas fa-calculator me-1"></i> محاسبه
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">نتیجه محاسبه</label>
+                                    <div id="editUsdResult" class="form-control-plaintext bg-light p-2 rounded">
+                                        نتیجه اینجا نمایش داده می‌شود.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- سایر فیلدها -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">موجودی <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control input-number" name="stock"
+                                   value="{{ edit_product.stock }}"
+                                   placeholder="مثال: 10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">آدرس انبار - اختیاری</label>
+                            <input type="text" class="form-control" name="warehouse"
+                                   value="{{ edit_product.warehouse or '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">توضیحات - اختیاری</label>
+                        <textarea class="form-control" name="description" rows="3">{{ edit_product.description or '' }}</textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="button" class="btn btn-secondary me-md-2" onclick="showListTab()">
+                            <i class="fas fa-arrow-right me-1"></i> بازگشت به لیست
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i> ذخیره تغییرات
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    کالایی برای ویرایش انتخاب نشده است.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- تب آپلود اکسل -->
+            <div class="tab-pane fade" id="upload" role="tabpanel">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="POST" enctype="multipart/form-data" action="{{ url_for('import_excel') }}">
+                            <div class="mb-3">
+                                <label class="form-label">انتخاب فایل اکسل (XLSX, XLS یا CSV)</label>
+                                <input type="file" class="form-control" name="file" accept=".xlsx,.xls,.csv" required>
+                                <div class="form-text text-muted">
+                                    ستون‌های الزامی: <code>nam</code> (نام)، <code>kharid</code> (قیمت خرید)، <code>fi</code> (قیمت فروش)  
+                                    ستون‌های اختیاری: <code>shenase</code>، <code>dolar</code>، <code>mojoodi</code>، <code>anbar</code>، <code>tozih</code>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-upload me-1"></i> آپلود و وارد کردن کالاها
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- تأییدیه حذف -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">تأیید حذف کالا</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف این کالا اطمینان دارید؟ این کار غیرقابل بازگشت است و فقط در صورتی امکان‌پذیر است که کالا در هیچ فاکتوری استفاده نشده باشد.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">لغو</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">حذف کالا</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let productIdToDelete = null;
+
+// نمایش تب لیست
+function showListTab() {
+    const listTab = new bootstrap.Tab(document.getElementById('list-tab'));
+    listTab.show();
+}
+
+// ویرایش کالا
+function editProduct(productId) {
+    window.location.href = "{{ url_for('products') }}?edit=" + productId;
+}
+
+// حذف کالا
+function deleteProduct(productId) {
+    productIdToDelete = productId;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    fetch(`/product/${productIdToDelete}/delete`, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) location.reload();
+        else alert('خطا: ' + data.error);
+    });
+});
+
+// تبدیل ارقام فارسی و عربی به لاتین
+function persianToLatinDigits(str) {
+    const faDigits = '۰۱۲۳۴۵۶۷۸۹';
+    const arDigits = '٠١٢٣٤٥٦٧٨٩';
+    let result = str;
+    for (let i = 0; i < 10; i++) {
+        result = result.replace(new RegExp(faDigits[i], 'g'), i);
+        result = result.replace(new RegExp(arDigits[i], 'g'), i);
+    }
+    return result;
+}
+
+// تبدیل عدد به حروف فارسی
+function numberToWords(num) {
+    if (isNaN(num) || num === '' || num == null || num == 0) return '';
+    num = parseFloat(num);
+    if (num === 0) return 'صفر';
+
+    const ones = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+    const teens = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+    const tens = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+    const hundreds = ['', 'صد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+    const scales = ['', ' هزار', ' میلیون', ' میلیارد'];
+
+    function convertLessThanOneThousand(n) {
+        let str = '';
+        if (n >= 100) {
+            str += hundreds[Math.floor(n / 100)] + ' و ';
+            n %= 100;
+        }
+        if (n >= 20) {
+            str += tens[Math.floor(n / 10)] + (n % 10 ? ' و ' + ones[n % 10] : '');
+        } else if (n >= 10) {
+            str += teens[n - 10];
+        } else if (n > 0) {
+            str += ones[n];
+        }
+        return str.replace(/ و $/, '');
+    }
+
+    if (num >= 1000000000000) return 'عدد بسیار بزرگ';
+
+    let parts = [];
+    let scaleIndex = 0;
+    let temp = num;
+    while (temp > 0) {
+        if (temp % 1000 !== 0) {
+            parts.unshift(convertLessThanOneThousand(temp % 1000) + (scales[scaleIndex] || ''));
+        }
+        temp = Math.floor(temp / 1000);
+        scaleIndex++;
+    }
+    return parts.join(' و ') + ' تومان';
+}
+
+// نمایش حروف عدد برای تومان
+function updateNumberInWords(inputId, displayId) {
+    const input = document.getElementById(inputId);
+    const display = document.getElementById(displayId);
+    if (!input || !display) return;
+    
+    let value = input.value.replace(/[,٬]/g, '');
+    value = persianToLatinDigits(value);
+    const num = parseFloat(value);
+    display.textContent = (isNaN(num) || num < 0) ? '' : numberToWords(num);
+}
+
+// نمایش قیمت دلاری به صورت "X دلار و Y سنت"
+function updateUsdDisplay(inputId, displayId) {
+    const input = document.getElementById(inputId);
+    const display = document.getElementById(displayId);
+    if (!input || !display) return;
+    
+    let value = input.value.replace(/[,٬]/g, '');
+    value = persianToLatinDigits(value);
+    const num = parseFloat(value);
+    
+    if (isNaN(num) || num < 0) {
+        display.textContent = '';
+        return;
+    }
+    
+    const dollars = Math.floor(num);
+    const cents = Math.round((num - dollars) * 100);
+    
+    let displayText = '';
+    if (dollars > 0) {
+        displayText += dollars.toLocaleString() + ' دلار';
+    }
+    if (cents > 0) {
+        if (displayText !== '') displayText += ' و ';
+        displayText += cents + ' سنت';
+    }
+    
+    if (displayText === '') {
+        displayText = 'صفر دلار';
+    }
+    
+    display.textContent = displayText;
+}
+
+// جستجوی زنده
+document.getElementById('globalSearch').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#productsTable tbody tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+});
+
+// فرمت هوشمند عدد برای نمایش (اعداد صحیح با جداکننده هزارگان)
+function smartFormatNumber(num) {
+    if (isNaN(num)) return '';
+    const n = parseFloat(num);
+    
+    // برای اعداد صحیح، از جداکننده هزارگان استفاده کن
+    if (Number.isInteger(n)) {
+        return n.toLocaleString();
+    } else {
+        // برای اعداد اعشاری، فقط دو رقم اعشار نمایش بده
+        return n.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        });
+    }
+}
+
+// ✅ تابع اصلاح‌شده: محاسبه از تومان
+function calculateSellPriceFromToman(mode) {
+    const prefix = mode === 'edit' ? 'edit' : 'add';
+    
+    let buyStr = document.getElementById(prefix + 'BuyPriceToman').value.trim();
+    buyStr = persianToLatinDigits(buyStr);
+    buyStr = buyStr.replace(/[,٬]/g, '');
+
+    let percentStr = document.getElementById(prefix + 'ProfitPercent').value.trim();
+    percentStr = persianToLatinDigits(percentStr);
+    percentStr = percentStr.replace(/[,٬]/g, '');
+
+    if (!buyStr || !percentStr) {
+        alert('قیمت خرید و درصد سود را وارد کنید.');
+        return;
+    }
+
+    const buy = parseFloat(buyStr);
+    const percent = parseFloat(percentStr);
+
+    if (isNaN(buy) || isNaN(percent) || buy <= 0 || percent < 0) {
+        alert('مقادیر وارد شده معتبر نیستند.');
+        return;
+    }
+
+    const sell = buy * (1 + percent / 100);
+    const sellPriceField = document.getElementById(prefix + 'SellPrice');
+    sellPriceField.value = smartFormatNumber(Math.round(sell));
+    
+    // به‌روزرسانی نمایش حروف برای قیمت فروش
+    updateNumberInWords(prefix + 'SellPrice', prefix + 'SellPriceWords');
+}
+
+// ✅ تابع اصلاح‌شده: محاسبه از دلار
+function calculateSellPriceFromUsd(mode) {
+    const prefix = mode === 'edit' ? 'edit' : 'add';
+    
+    let usdStr = document.getElementById(prefix + 'BuyPriceUsd').value.trim();
+    usdStr = persianToLatinDigits(usdStr);
+    // حذف کاماها اما حفظ نقطه
+    usdStr = usdStr.replace(/[,٬]/g, '');
+    
+    if (!usdStr) {
+        alert('قیمت خرید دلاری را وارد کنید.');
+        return;
+    }
+
+    const usd = parseFloat(usdStr);
+    if (isNaN(usd) || usd <= 0) {
+        alert('قیمت دلاری معتبر نیست.');
+        return;
+    }
+
+    const rateStr = prompt('نرخ دلار امروز چقدر است؟ (به تومان)');
+    if (!rateStr) return;
+    let rate = persianToLatinDigits(rateStr.trim());
+    rate = rate.replace(/[,٬]/g, '');
+    const rateNum = parseFloat(rate);
+    if (isNaN(rateNum) || rateNum <= 0) {
+        alert('نرخ دلار معتبر نیست.');
+        return;
+    }
+
+    const percentStr = prompt('چند درصد سود اضافه شود؟ (مثال: 20)');
+    if (!percentStr) return;
+    let percent = persianToLatinDigits(percentStr.trim());
+    percent = percent.replace(/[,٬]/g, '');
+    const percentNum = parseFloat(percent);
+    if (isNaN(percentNum) || percentNum < 0) {
+        alert('درصد سود معتبر نیست.');
+        return;
+    }
+
+    const buyToman = usd * rateNum;
+    const sell = buyToman * (1 + percentNum / 100);
+
+    document.getElementById(prefix + 'UsdResult').innerHTML = `
+        <strong>قیمت خرید:</strong> ${smartFormatNumber(Math.round(buyToman))} تومان<br>
+        <strong>قیمت فروش:</strong> ${smartFormatNumber(Math.round(sell))} تومان
+    `;
+}
+
+// فرمت‌دهی فیلدهای عددی
+document.querySelectorAll('.input-number').forEach(input => {
+    input.addEventListener('input', function() {
+        // فقط اجازه ورود اعداد و نقطه
+        let v = this.value.replace(/[^\d۰-۹٠-٩.]/g, '');
+        v = persianToLatinDigits(v);
+        
+        // اگر فقط یک نقطه باشد، اجازه بده
+        if (v === '.' || v === '') {
+            this.value = v;
+            return;
+        }
+        
+        // بررسی اینکه بیشتر از یک نقطه نداشته باشد
+        const dotCount = (v.match(/\./g) || []).length;
+        if (dotCount > 1) {
+            // اگر بیشتر از یک نقطه دارد، فقط اولی را نگه دار
+            const parts = v.split('.');
+            v = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        this.value = v;
+        
+        const id = this.id;
+        if (id.includes('BuyPriceToman')) {
+            const prefix = id.includes('edit') ? 'edit' : 'add';
+            updateNumberInWords(id, prefix + 'BuyPriceTomanWords');
+        }
+        else if (id.includes('SellPrice')) {
+            const prefix = id.includes('edit') ? 'edit' : 'add';
+            updateNumberInWords(id, prefix + 'SellPriceWords');
+        }
+        else if (id.includes('BuyPriceUsd')) {
+            const prefix = id.includes('edit') ? 'edit' : 'add';
+            updateUsdDisplay(id, prefix + 'BuyPriceUsdDisplay');
+        }
+    });
+});
+
+// قبل از ارسال فرم، اعداد را فرمت کن
+document.getElementById('addProductForm')?.addEventListener('submit', function(e) {
+    // فیلدهای عددی - کاماها را حذف کن و به عدد تبدیل کن
+    const numberFields = ['addBuyPriceToman', 'addSellPrice', 'addBuyPriceUsd', 'stock'];
+    numberFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && field.value) {
+            let value = field.value.replace(/[,٬]/g, '');
+            value = persianToLatinDigits(value);
+            
+            // تبدیل به عدد و سپس به رشته (برای حذف صفرهای اضافی)
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                // برای اعداد صحیح، بدون اعشار ذخیره کن
+                if (Number.isInteger(num)) {
+                    field.value = num.toString();
+                } else {
+                    field.value = num.toString();
+                }
+            }
+        }
+    });
+});
+
+document.getElementById('editProductForm')?.addEventListener('submit', function(e) {
+    // فیلدهای عددی - کاماها را حذف کن و به عدد تبدیل کن
+    const numberFields = ['editBuyPriceToman', 'editSellPrice', 'editBuyPriceUsd', 'stock'];
+    numberFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && field.value) {
+            let value = field.value.replace(/[,٬]/g, '');
+            value = persianToLatinDigits(value);
+            
+            // تبدیل به عدد و سپس به رشته (برای حذف صفرهای اضافی)
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                // برای اعداد صحیح، بدون اعشار ذخیره کن
+                if (Number.isInteger(num)) {
+                    field.value = num.toString();
+                } else {
+                    field.value = num.toString();
+                }
+            }
+        }
+    });
+});
+
+// مقداردهی اولیه و فعال‌سازی تب مناسب
+document.addEventListener('DOMContentLoaded', function() {
+    // اگر در حال ویرایش هستیم، تب ویرایش را فعال کن
+    {% if edit_product %}
+    const editTab = document.getElementById('edit-tab');
+    editTab.style.display = 'block';
+    const editTabInstance = new bootstrap.Tab(editTab);
+    editTabInstance.show();
+    {% endif %}
+
+    // مقداردهی اولیه فیلدهای ویرایش با فرمت مناسب
+    const editNumberFields = ['editBuyPriceToman', 'editSellPrice', 'editBuyPriceUsd'];
+    editNumberFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value) {
+            let value = el.value;
+            
+            // اگر کاما دارد، حذف کن
+            value = value.replace(/,/g, '');
+            
+            // فقط اعداد و نقطه را نگه دار
+            value = value.replace(/[^\d.]/g, '');
+            
+            // بررسی اعتبار عدد
+            const num = parseFloat(value);
+            if (!isNaN(num)) {
+                // برای اعداد صحیح، بدون اعشار نمایش بده
+                if (Number.isInteger(num)) {
+                    el.value = num.toLocaleString();
+                } else {
+                    el.value = num.toString();
+                }
+            }
+            
+            if (id === 'editBuyPriceToman') {
+                updateNumberInWords(id, 'editBuyPriceTomanWords');
+            }
+            else if (id === 'editSellPrice') {
+                updateNumberInWords(id, 'editSellPriceWords');
+            }
+            else if (id === 'editBuyPriceUsd') {
+                updateUsdDisplay(id, 'editBuyPriceUsdDisplay');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

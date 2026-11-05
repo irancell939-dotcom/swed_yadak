@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}لیست فاکتورها - سوئد یدک{% endblock %}
+{% block content %}
+<style>
+.invoice-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.invoice-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.status-badge {
+    font-weight: bold;
+}
+.paid-badge {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+.unpaid-badge {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+.search-box {
+    position: sticky;
+    top: 15px;
+    z-index: 100;
+}
+.profit-badge {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+</style>
+<div class="card mb-4">
+    <div class="card-header bg-gradient-primary text-white">
+        <i class="fas fa-list me-2"></i> لیست فاکتورها
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="searchFilter" class="form-control" 
+                       placeholder="جستجوی فاکتور (شماره، مشتری، کالا...)">
+            </div>
+        </div>
+        <!-- دکمه‌های فیلتر وضعیت -->
+        <div class="btn-group mb-3">
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="filterByStatus('all')">همه</button>
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="filterByStatus('paid')">تسویه شده</button>
+            <button type="button" class="btn btn-outline-warning btn-sm" onclick="filterByStatus('unpaid')">تسویه نشده</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover" id="invoicesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>شماره</th>
+                        <th>مشتری</th>
+                        <th>تلفن</th>
+                        <th>تاریخ</th>
+                        <th>مبلغ</th>
+                        <th>پرداخت شده</th>
+                        <th>باقیمانده</th>
+                        <th>وضعیت</th>
+                        <th>عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in invoices %}
+                    <tr class="invoice-row" 
+                        data-customer="{{ inv.customer_name | lower }}"
+                        data-phone="{{ inv.customer_phone | lower }}"
+                        data-product="{{ inv.products_search | join(' ') | lower }}">
+                        <td><strong>#{{ inv.id }}</strong></td>
+                        <td>{{ inv.customer_name }}</td>
+                        <td>{{ inv.customer_phone }}</td>
+                        <td>{{ inv.date_jalali }}</td>
+                        <td class="fw-bold">{{ "{:,.0f}".format(inv.total_amount) }} تومان</td>
+                        <td class="text-success">{{ "{:,.0f}".format(inv.paid_amount) }} تومان</td>
+                        <td class="text-danger fw-bold">{{ "{:,.0f}".format(inv.remaining) }} تومان</td>
+                        <td>
+                            <span class="badge status-badge 
+                                {% if inv.is_paid %}paid-badge{% else %}unpaid-badge{% endif %}">
+                                {% if inv.is_paid %}تسویه شده{% else %}تسویه نشده{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('invoice_detail', invoice_id=inv.id) }}" 
+                                   class="btn btn-sm btn-info" title="جزئیات">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <!-- دکمه نمایش سود -->
+                                <button class="btn btn-sm btn-outline-info show-profit-btn" 
+                                        title="نمایش سود"
+                                        data-invoice-id="{{ inv.id }}"
+                                        data-profit="{{ inv.total_profit }}">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                                <!-- دکمه ویرایش -->
+                                <a href="{{ url_for('edit_invoice', invoice_id=inv.id) }}" 
+                                   class="btn btn-sm btn-warning" title="ویرایش">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if not inv.is_paid %}
+                                <a href="{{ url_for('invoice_detail', invoice_id=inv.id) }}" 
+                                   class="btn btn-sm btn-success" title="پرداخت">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('print_invoice', invoice_id=inv.id) }}" 
+                                   target="_blank" class="btn btn-sm btn-secondary" title="پرینت">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('searchFilter').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.invoice-row');
+    rows.forEach(row => {
+        const customer = row.dataset.customer || '';
+        const phone = row.dataset.phone || '';
+        const product = row.dataset.product || '';
+        const match = customer.includes(searchTerm) || 
+                      phone.includes(searchTerm) || 
+                      product.includes(searchTerm) ||
+                      row.textContent.toLowerCase().includes(searchTerm);
+        row.style.display = match ? '' : 'none';
+    });
+});
+
+function filterByStatus(status) {
+    const rows = document.querySelectorAll('.invoice-row');
+    rows.forEach(row => {
+        const isPaid = row.querySelector('.status-badge').textContent.trim() === 'تسویه شده';
+        if (status === 'all') {
+            row.style.display = '';
+        } else if (status === 'paid' && isPaid) {
+            row.style.display = '';
+        } else if (status === 'unpaid' && !isPaid) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// نمایش سود فاکتور
+document.querySelectorAll('.show-profit-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const invoiceId = this.dataset.invoiceId;
+        const profit = parseFloat(this.dataset.profit);
+        const profitFormatted = profit.toLocaleString();
+        
+        // ایجاد modal برای نمایش سود
+        const modalHtml = `
+            <div class="modal fade" id="profitModal" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">سود فاکتور #${invoiceId}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                                <h4 class="text-success">${profitFormatted} تومان</h4>
+                            </div>
+                            <small class="text-muted">سود خالص پس از کسر تخفیف</small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // حذف modal قبلی اگر وجود دارد
+        const existingModal = document.getElementById('profitModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // اضافه کردن modal جدید
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // نمایش modal
+        const profitModal = new bootstrap.Modal(document.getElementById('profitModal'));
+        profitModal.show();
+    });
+});
+</script>
+{% endblock %}
