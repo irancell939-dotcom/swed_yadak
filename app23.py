@@ -427,22 +427,32 @@ def browser_jalali_now():
     return jdatetime.datetime.fromgregorian(datetime=browser_now())
 
 def normalize_persian_text(text):
-    """تبدیل حروف فارسی به فرم استاندارد برای جستجو"""
-    if not text:
-        return text
-    # تبدیل حروف مختلف به فرم استاندارد
+    """یکسان‌سازی نویسه‌های عربی و فارسی برای جستجوی دقیق‌تر."""
+    if text is None:
+        return ''
+    import unicodedata
+    text = unicodedata.normalize('NFKC', str(text))
     replacements = {
-        'ي': 'ی',  # ی عربی به ی فارسی
-        'ك': 'ک',  # ک عربی به ک فارسی
-        'ة': 'ه',  # ة عربی به ه فارسی
-        'ؤ': 'و',  # ؤ به و
-        'إ': 'ا',  # إ به ا
-        'أ': 'ا',  # أ به ا
-        'ٱ': 'ا',  # ٱ به ا
+        'ي': 'ی', 'ى': 'ی', 'ئ': 'ی',
+        'ك': 'ک',
+        'ة': 'ه', 'ۀ': 'ه',
+        'ؤ': 'و', 'إ': 'ا', 'أ': 'ا', 'ٱ': 'ا', 'آ': 'ا',
+        'ـ': '', '‌': '', '‍': '', '﻿': ''
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
-    return text
+    # حذف اعراب عربی
+    text = re.sub(r'[\u064b-\u065f\u0670]', '', text)
+    # تبدیل ارقام فارسی و عربی به ارقام لاتین
+    trans = str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+    return re.sub(r'\s+', ' ', text.translate(trans)).strip().lower()
+
+def persian_search_sql(column):
+    """عبارت SQL برای استانداردسازی متن ذخیره‌شده، سازگار با SQLite و PostgreSQL."""
+    expr = f'LOWER({column})'
+    for old, new in [('ي','ی'), ('ى','ی'), ('ئ','ی'), ('ك','ک'), ('ة','ه'), ('ۀ','ه'), ('آ','ا'), ('أ','ا'), ('إ','ا'), ('ٱ','ا'), ('ـ',''), ('‌',''), ('‍','')]:
+        expr = f"REPLACE({expr}, '{old}', '{new}')"
+    return expr
 
 @app.after_request
 def after_request(response):
@@ -1002,13 +1012,14 @@ def search_products_all():
     q = request.args.get('q', '').lower()
     q = normalize_persian_text(q)
     conn = get_db()
-    products = conn.execute("""
-        SELECT * FROM products 
-        WHERE (LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR 
-               LOWER(REPLACE(REPLACE(name, 'ي', 'ی'), 'ك', 'ک')) LIKE ? OR
-               LOWER(REPLACE(REPLACE(sku, 'ي', 'ی'), 'ك', 'ک')) LIKE ?)
+    name_expr = persian_search_sql('name')
+    sku_expr = persian_search_sql('sku')
+    pattern = f"%{q}%"
+    products = conn.execute(f"""
+        SELECT * FROM products
+        WHERE ({name_expr} LIKE ? OR {sku_expr} LIKE ?)
         ORDER BY name
-    """, (f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%")).fetchall()
+    """, (pattern, pattern)).fetchall()
     conn.close()
     return jsonify([dict(p) for p in products])
 
@@ -1018,13 +1029,14 @@ def search_products_by_name():
     q = request.args.get('q', '').lower()
     q = normalize_persian_text(q)
     conn = get_db()
-    products = conn.execute("""
-        SELECT * FROM products 
-        WHERE (LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR 
-               LOWER(REPLACE(REPLACE(name, 'ي', 'ی'), 'ك', 'ک')) LIKE ? OR
-               LOWER(REPLACE(REPLACE(sku, 'ي', 'ی'), 'ك', 'ک')) LIKE ?)
+    name_expr = persian_search_sql('name')
+    sku_expr = persian_search_sql('sku')
+    pattern = f"%{q}%"
+    products = conn.execute(f"""
+        SELECT * FROM products
+        WHERE ({name_expr} LIKE ? OR {sku_expr} LIKE ?)
         ORDER BY name
-    """, (f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%")).fetchall()
+    """, (pattern, pattern)).fetchall()
     conn.close()
     return jsonify([dict(p) for p in products])
 
@@ -2698,13 +2710,11 @@ def search_products_by_tab():
 
         # اضافه کردن شرط جستجو
         if query:
-            where_conditions.append("""
-                (LOWER(name) LIKE ? OR LOWER(sku) LIKE ? OR 
-                 LOWER(REPLACE(REPLACE(name, 'ي', 'ی'), 'ك', 'ک')) LIKE ? OR
-                 LOWER(REPLACE(REPLACE(sku, 'ي', 'ی'), 'ك', 'ک')) LIKE ?)
-            """)
+            name_expr = persian_search_sql('name')
+            sku_expr = persian_search_sql('sku')
+            where_conditions.append(f"({name_expr} LIKE ? OR {sku_expr} LIKE ?)")
             search_pattern = f"%{query}%"
-            params.extend([search_pattern, search_pattern, search_pattern, search_pattern])
+            params.extend([search_pattern, search_pattern])
 
         # ساخت کوئری
         where_clause = " AND ".join(where_conditions)
