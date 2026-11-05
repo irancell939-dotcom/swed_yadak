@@ -457,13 +457,7 @@ def init_db():
         from db_backend import init_postgres_schema
         init_postgres_schema(DATABASE_URL)
         conn = get_db()
-        # افزودن ستون‌های تاریخ و جدول سوابق قیمت به دیتابیس‌های قبلی
-        for col, ddl in [('price_updated_jalali', 'TEXT'), ('last_edited_jalali', 'TEXT')]:
-            try: conn.execute(f'ALTER TABLE products ADD COLUMN {col} {ddl}')
-            except Exception: pass
-        conn.execute('''CREATE TABLE IF NOT EXISTS product_price_history (
-            id BIGSERIAL PRIMARY KEY, product_id BIGINT NOT NULL, product_name TEXT, field_name TEXT NOT NULL,
-            old_price DOUBLE PRECISION, new_price DOUBLE PRECISION, changed_at_jalali TEXT NOT NULL)''')
+        # ستون‌های تاریخ و جدول سوابق قیمت در init_postgres_schema ساخته می‌شوند.
         if not conn.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]:
             ph = generate_password_hash(os.environ.get('DEFAULT_ADMIN_PASSWORD', '123456'))
             conn.execute('INSERT INTO users (full_name, username, password_hash, role, permissions, created_date_greg, created_date_jalali) VALUES (?, ?, ?, ?, ?, ?, ?)',
