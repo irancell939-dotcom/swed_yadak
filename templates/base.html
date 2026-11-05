@@ -87,6 +87,77 @@
             background-color: #1d3557;
             color: white;
         }
+
+        /* خاوران سافت - پوسته شاد و مدرن سوئد یدک */
+        :root {
+            --scania-red: #f05a67;
+            --scania-blue: #315b91;
+            --scania-light: #f4f8ff;
+            --ui-ink: #24344d;
+            --ui-mint: #e4f7ef;
+            --ui-yellow: #fff4d6;
+            --ui-pink: #fff0f2;
+        }
+        body {
+            background: linear-gradient(145deg,#f7fbff 0%,#fff9f0 48%,#f5f2ff 100%);
+            color: var(--ui-ink);
+        }
+        .navbar {
+            background: linear-gradient(110deg,#ef5968 0%,#8d65b5 48%,#327eaa 100%) !important;
+            box-shadow: 0 5px 22px rgba(56,77,120,.18);
+            border-bottom: 3px solid rgba(255,255,255,.35);
+        }
+        .navbar-brand { letter-spacing: -.3px; text-shadow: 0 1px 3px #0002; }
+        .navbar .nav-link {
+            color: rgba(255,255,255,.96) !important;
+            border-radius: 12px; margin: 3px 2px; padding: 8px 10px !important;
+            transition: background .2s, transform .2s;
+        }
+        .navbar .nav-link:hover { background: rgba(255,255,255,.2); transform: translateY(-1px); }
+        main.container { max-width: 1500px; }
+        .card, .tab-content, .modal-content, .dropdown-menu {
+            border: 1px solid rgba(95,125,170,.12) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 9px 28px rgba(45,69,105,.09) !important;
+        }
+        .card-header {
+            background: linear-gradient(110deg,#416da7,#8c6db5) !important;
+            border: 0; padding: 14px 18px;
+        }
+        .btn { border-radius: 11px; font-weight: 600; transition: transform .16s, box-shadow .16s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 5px 12px rgba(35,55,90,.13); }
+        .btn-primary, .btn-scania { background: linear-gradient(110deg,#477fc0,#7867b5); border: 0; }
+        .btn-success { background: linear-gradient(110deg,#2aab80,#58bd9a); border: 0; }
+        .btn-danger { background: linear-gradient(110deg,#e75d6c,#d94b70); border: 0; }
+        .btn-warning { background: linear-gradient(110deg,#ffc85a,#f2a94c); border: 0; color:#49351a; }
+        .form-control, .form-select {
+            border: 1px solid #dce5f1; border-radius: 11px; min-height: 42px;
+            background-color: #fff; transition: border-color .2s, box-shadow .2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #77a6df; box-shadow: 0 0 0 .2rem rgba(86,143,205,.16);
+        }
+        .table { --bs-table-bg: transparent; color: var(--ui-ink); }
+        .table thead th { background: #eaf1fc; color: #31527f; border-bottom: 0; }
+        .table tbody tr { border-color: #edf1f7; }
+        .table tbody tr:hover { background: #fff9e9; }
+        .alert { border: 0; border-radius: 14px; box-shadow: 0 4px 14px #304a6b10; }
+        .nav-tabs { border-bottom-color: #dfe8f4; }
+        .nav-tabs .nav-link { border-radius: 12px 12px 0 0; color:#526782; font-weight:700; }
+        .nav-tabs .nav-link.active { color:#315f9b; background:#fff; border-color:#dfe8f4 #dfe8f4 #fff; }
+        footer {
+            background: linear-gradient(110deg,#315b91,#725b9c) !important;
+            border-top: 4px solid #f4bd63; border-radius: 22px 22px 0 0;
+            box-shadow: 0 -5px 24px rgba(45,69,105,.08);
+        }
+        .sidebar { background: #f1f6fd; border-left-color:#dce6f3; }
+        .sidebar .nav-link:hover { background:#e2edfb; color:#315b91; }
+        @media (max-width: 768px) {
+            main.container { padding-left: 10px; padding-right: 10px; }
+            .navbar-brand { font-size: 1.15rem; }
+            .card { margin-bottom: 16px; }
+        }
+
     </style>
 </head>
 <body>
