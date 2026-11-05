@@ -123,16 +123,16 @@
 {% block scripts %}
 <script>
 document.getElementById('searchFilter').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
+    const searchTerm = window.normalizePersianSearchText(this.value);
     const rows = document.querySelectorAll('.invoice-row');
     rows.forEach(row => {
-        const customer = row.dataset.customer || '';
-        const phone = row.dataset.phone || '';
-        const product = row.dataset.product || '';
+        const customer = window.normalizePersianSearchText(row.dataset.customer || '');
+        const phone = window.normalizePersianSearchText(row.dataset.phone || '');
+        const product = window.normalizePersianSearchText(row.dataset.product || '');
         const match = customer.includes(searchTerm) || 
                       phone.includes(searchTerm) || 
                       product.includes(searchTerm) ||
-                      row.textContent.toLowerCase().includes(searchTerm);
+                      window.normalizePersianSearchText(row.textContent).includes(searchTerm);
         row.style.display = match ? '' : 'none';
     });
 });
