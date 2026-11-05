@@ -396,9 +396,16 @@ def clean_numeric_value(val):
         return 0.0
 
 def get_db():
+    """Return a database connection with the same execute() API on SQLite and Neon."""
     if USE_POSTGRES:
-        from db_backend import connect_postgres
-        return connect_postgres(DATABASE_URL)
+        from db_backend import connect_postgres, Connection as PostgresConnection
+        db = connect_postgres(DATABASE_URL)
+        # Defensive compatibility: some older deployments returned the raw
+        # psycopg2 connection. Wrap it so existing SQLite-style conn.execute()
+        # calls continue to work consistently.
+        if not callable(getattr(db, 'execute', None)):
+            db = PostgresConnection(db)
+        return db
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -3421,7 +3428,13 @@ def api_delete_purchase_invoice_item():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-init_db()
+# Initialize the selected database before Gunicorn starts serving requests.
+# Keep this call after init_db() and all required definitions.
+try:
+    init_db()
+except Exception as db_init_error:
+    print(f'خطا در مقداردهی اولیه دیتابیس: {db_init_error}')
+    raise
 
 if __name__ == '__main__':
     if not USE_POSTGRES:
