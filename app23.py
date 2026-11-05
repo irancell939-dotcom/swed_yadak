@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
 import sqlite3
 import jdatetime
@@ -26,7 +27,9 @@ os.makedirs('backup', exist_ok=True)
 DB_PATH = 'database.db'
 IS_OFFLINE = os.path.exists('database.db')
 
-# دکوراتورهای کنترل دسترسی - باید در ابتدا تعریف شوند
+# ============================================================
+# دکوراتورهای کنترل دسترسی
+# ============================================================
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -55,10 +58,8 @@ def permission_required(permission):
             if 'user_id' not in session:
                 flash('لطفاً ابتدا وارد سیستم شوید.', 'warning')
                 return redirect(url_for('login'))
-            # مدیر سیستم به همه چیز دسترسی دارد
             if session.get('role') == 'admin':
                 return f(*args, **kwargs)
-            # بررسی دسترسی کاربر
             user_permissions = session.get('permissions', '')
             if user_permissions == 'all' or permission in user_permissions.split(','):
                 return f(*args, **kwargs)
@@ -67,149 +68,200 @@ def permission_required(permission):
         return decorated_function
     return decorator
 
-# تابع برای پیدا کردن مسیر و نام فایل اجرایی اصلی
-def get_main_executable_info():
-    """پیدا کردن مسیر و نام فایل اصلی که برنامه از آن اجرا شده"""
-    # اگر با pyinstaller بسته‌بندی شده باشد
-    if getattr(sys, 'frozen', False):
-        executable_path = sys.executable
-        executable_dir = os.path.dirname(executable_path)
-        executable_name = os.path.basename(executable_path)
+# ============================================================
+# توابع کمکی
+# ============================================================
+@app.template_filter('jdate')
+def jdate_filter(dt, format='%Y/%m/%d'):
+    if dt is None: return ''
+    if isinstance(dt, str): return dt
+    try: return jdatetime.datetime.fromgregorian(datetime=dt).strftime(format)
+    except: return dt.strftime(format) if hasattr(dt, 'strftime') else str(dt)
+
+def persian_to_latin_digits(s):
+    if not s: return s
+    return s.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
+
+def clean_numeric_value(val):
+    if pd.isna(val): return 0.0
+    s = re.sub(r'[^\d.-]', '', str(val).strip())
+    if s in ('', '.', '-'): return 0.0
+    try: return float(s)
+    except ValueError: return 0.0
+
+def normalize_persian_text(text):
+    if not text: return text
+    for old, new in {'ي': 'ی', 'ك': 'ک', 'ة': 'ه', 'ؤ': 'و', 'إ': 'ا', 'أ': 'ا'}.items():
+        text = text.replace(old, new)
+    return text
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+# ============================================================
+# توابع ساخت جداول (برای SQLite و PostgreSQL)
+# ============================================================
+def _create_tables_sqlite():
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    tables = [
+        "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, sku TEXT, buy_price_tomans REAL, buy_price_usd REAL, sell_price REAL, warehouse TEXT, stock INTEGER, description TEXT, sales_count INTEGER DEFAULT 0)",
+        "CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_name TEXT, customer_phone TEXT, date_jalali TEXT, date_greg TEXT, total_amount REAL, total_profit REAL, discount_amount REAL, discount_percent REAL, status TEXT)",
+        "CREATE TABLE IF NOT EXISTS invoice_items (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER, product_id INTEGER, product_name TEXT, sku TEXT, quantity INTEGER, unit_price REAL, profit_per_unit REAL)",
+        "CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER, amount REAL, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_lists (id INTEGER PRIMARY KEY AUTOINCREMENT, supplier_name TEXT, created_date_jalali TEXT, created_date_greg TEXT, status TEXT, notes TEXT, estimated_total REAL, actual_total REAL)",
+        "CREATE TABLE IF NOT EXISTS purchase_list_items (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_list_id INTEGER, product_id INTEGER, product_name TEXT, sku TEXT, current_stock INTEGER, quantity_to_buy INTEGER, estimated_unit_price REAL, actual_unit_price REAL, estimated_total_price REAL, actual_total_price REAL, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_list_id INTEGER, supplier_name TEXT, invoice_date_jalali TEXT, invoice_date_greg TEXT, total_amount REAL, paid_amount REAL, remaining_amount REAL, payment_method TEXT, status TEXT, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, full_name TEXT, username TEXT UNIQUE, password_hash TEXT, role TEXT, permissions TEXT, is_active INTEGER DEFAULT 1)",
+        "CREATE TABLE IF NOT EXISTS permissions_master (id INTEGER PRIMARY KEY AUTOINCREMENT, permission_key TEXT UNIQUE, permission_name TEXT, category TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_invoice_id INTEGER, amount REAL, payment_method TEXT, sheba_number TEXT, account_owner TEXT, bank_name TEXT, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT, receipt_number TEXT, created_by INTEGER, created_date_greg TEXT, created_date_jalali TEXT)",
+        "CREATE TABLE IF NOT EXISTS shop_expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, expense_date_jalali TEXT, expense_date_greg TEXT, category TEXT, description TEXT, amount REAL, payment_method TEXT, receipt_number TEXT, notes TEXT, created_by INTEGER, created_date_greg TEXT, created_date_jalali TEXT)"
+    ]
+    for query in tables: cur.execute(query)
+    conn.commit()
+    
+    # درج کاربر پیش‌فرض
+    cur.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
+    if cur.fetchone()[0] == 0:
+        ph = generate_password_hash('123456')
+        cur.execute("INSERT INTO users (full_name, username, password_hash, role, permissions) VALUES (?, ?, ?, ?, ?)", 
+                    ('مدیر سیستم', 'admin', ph, 'admin', 'all'))
+        conn.commit()
+    conn.close()
+
+def _create_tables_postgres():
+    db_url = os.environ.get('DATABASE_URL')
+    if 'sslmode' not in db_url:
+        db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
+    conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+    cur = conn.cursor()
+    tables = [
+        "CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name TEXT, sku TEXT, buy_price_tomans REAL, buy_price_usd REAL, sell_price REAL, warehouse TEXT, stock INTEGER, description TEXT, sales_count INTEGER DEFAULT 0)",
+        "CREATE TABLE IF NOT EXISTS invoices (id SERIAL PRIMARY KEY, customer_name TEXT, customer_phone TEXT, date_jalali TEXT, date_greg TEXT, total_amount REAL, total_profit REAL, discount_amount REAL, discount_percent REAL, status TEXT)",
+        "CREATE TABLE IF NOT EXISTS invoice_items (id SERIAL PRIMARY KEY, invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE, product_id INTEGER, product_name TEXT, sku TEXT, quantity INTEGER, unit_price REAL, profit_per_unit REAL)",
+        "CREATE TABLE IF NOT EXISTS payments (id SERIAL PRIMARY KEY, invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE, amount REAL, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_lists (id SERIAL PRIMARY KEY, supplier_name TEXT, created_date_jalali TEXT, created_date_greg TEXT, status TEXT, notes TEXT, estimated_total REAL, actual_total REAL)",
+        "CREATE TABLE IF NOT EXISTS purchase_list_items (id SERIAL PRIMARY KEY, purchase_list_id INTEGER REFERENCES purchase_lists(id) ON DELETE CASCADE, product_id INTEGER, product_name TEXT, sku TEXT, current_stock INTEGER, quantity_to_buy INTEGER, estimated_unit_price REAL, actual_unit_price REAL, estimated_total_price REAL, actual_total_price REAL, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_invoices (id SERIAL PRIMARY KEY, purchase_list_id INTEGER REFERENCES purchase_lists(id), supplier_name TEXT, invoice_date_jalali TEXT, invoice_date_greg TEXT, total_amount REAL, paid_amount REAL, remaining_amount REAL, payment_method TEXT, status TEXT, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, full_name TEXT, username TEXT UNIQUE, password_hash TEXT, role TEXT, permissions TEXT, is_active BOOLEAN DEFAULT TRUE)",
+        "CREATE TABLE IF NOT EXISTS permissions_master (id SERIAL PRIMARY KEY, permission_key TEXT UNIQUE, permission_name TEXT, category TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_payments (id SERIAL PRIMARY KEY, purchase_invoice_id INTEGER REFERENCES purchase_invoices(id) ON DELETE CASCADE, amount REAL, payment_method TEXT, sheba_number TEXT, account_owner TEXT, bank_name TEXT, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT, receipt_number TEXT, created_by INTEGER REFERENCES users(id), created_date_greg TEXT, created_date_jalali TEXT)",
+        "CREATE TABLE IF NOT EXISTS shop_expenses (id SERIAL PRIMARY KEY, expense_date_jalali TEXT, expense_date_greg TEXT, category TEXT, description TEXT, amount REAL, payment_method TEXT, receipt_number TEXT, notes TEXT, created_by INTEGER REFERENCES users(id), created_date_greg TEXT, created_date_jalali TEXT)"
+    ]
+    for query in tables: cur.execute(query)
+    conn.commit()
+    
+    # درج کاربر پیش‌فرض
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE username = 'admin'")
+    if cur.fetchone()['count'] == 0:
+        ph = generate_password_hash('123456')
+        cur.execute("INSERT INTO users (full_name, username, password_hash, role, permissions) VALUES (%s, %s, %s, %s, %s)", 
+                    ('مدیر سیستم', 'admin', ph, 'admin', 'all'))
+        conn.commit()
+    cur.close()
+    conn.close()
+
+# ============================================================
+# اتصال به دیتابیس (هوشمند)
+# ============================================================
+def get_db():
+    if IS_OFFLINE:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("SELECT 1 FROM users LIMIT 1")
+        except sqlite3.OperationalError:
+            conn.close()
+            _create_tables_sqlite()
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+        return conn
     else:
-        # اگر مستقیماً با پایتون اجرا شده باشد
-        executable_path = os.path.abspath(sys.argv[0])
-        executable_dir = os.path.dirname(executable_path)
-        executable_name = os.path.basename(executable_path)
-    return {
-        'path': executable_path,
-        'dir': executable_dir,
-        'name': executable_name,
-        'name_without_ext': os.path.splitext(executable_name)[0]
-    }
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            raise RuntimeError("در حالت آنلاین، متغیر DATABASE_URL الزامی است.")
+        if 'sslmode' not in db_url:
+            db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
+        conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM users LIMIT 1")
+            cur.close()
+        except Exception:
+            conn.close()
+            _create_tables_postgres()
+            conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        return conn
 
-# تابع برای کپی خودکار روی فلش
-def auto_copy_to_flash():
-    """کپی خودکار فایل اجرایی و تمام فایل‌های برنامه روی فلش‌های متصل"""
-    try:
-        flash_drives = get_flash_drives()
-        if not flash_drives:
-            return False, "هیچ فلش مموری یافت نشد"
-        exec_info = get_main_executable_info()
-        flash_drive = flash_drives[0]
-        # نام پوشه مقصد با نام فایل اجرایی
-        target_folder_name = f"SwedYadak_{exec_info['name_without_ext']}"
-        target_path = os.path.join(flash_drive['mountpoint'], target_folder_name)
-        # ایجاد پوشه مقصد
-        os.makedirs(target_path, exist_ok=True)
-        # لیست پوشه‌های مهم که باید حتماً کپی شوند
-        important_folders = ['templates', 'static']
-        # کپی تمام فایل‌های موجود در پوشه اصلی
-        copied_files = []
-        # اول: کپی پوشه‌های مهم
-        for folder in important_folders:
-            source_folder = os.path.join(exec_info['dir'], folder)
-            target_folder = os.path.join(target_path, folder)
-            if os.path.exists(source_folder):
-                shutil.copytree(source_folder, target_folder, dirs_exist_ok=True)
-                copied_files.append(f"{folder}/")
-                print(f"پوشه {folder} کپی شد")
-        # سپس: کپی فایل‌های دیگر
-        for item in os.listdir(exec_info['dir']):
-            item_path = os.path.join(exec_info['dir'], item)
-            target_item_path = os.path.join(target_path, item)
-            # اگر قبلاً کپی شده، رد شو
-            if item in important_folders:
-                continue
-            # نادیده گرفتن فایل‌های موقت و پوشه‌های خاص
-            exclude_patterns = ['__pycache__', '.git', '.vscode', 'venv', 'env', 'temp', 'tmp']
-            if any(exclude in item.lower() for exclude in exclude_patterns):
-                continue
-            try:
-                if os.path.isfile(item_path):
-                    shutil.copy2(item_path, target_item_path)
-                    copied_files.append(item)
-                elif os.path.isdir(item_path):
-                    # پوشه‌های دیگر (به جز موارد مهم)
-                    other_important = ['uploads']
-                    if item in other_important:
-                        shutil.copytree(item_path, target_item_path, dirs_exist_ok=True)
-                        copied_files.append(f"{item}/")
-            except Exception as e:
-                print(f"خطا در کپی {item}: {e}")
 
-        # ایجاد فایل اطلاعات
-        info_content = f"""کپی خودکار سوئد یدک
-تاریخ ایجاد: {jdatetime.datetime.now().strftime('%Y/%m/%d %H:%M:%S')}
-نام فایل اجرایی: {exec_info['name']}
-مسیر اصلی: {exec_info['dir']}
-فلش مقصد: {flash_drive['mountpoint']}
-تعداد فایل‌های کپی شده: {len(copied_files)}
-فایل‌های کپی شده:
-{chr(10).join(f'- {file}' for file in sorted(copied_files))}
-دستورات اجرای برنامه:
-اگر فایل اجرایی است:
-1. دوبار کلیک روی: {exec_info['name']}
-اگر فایل پایتون است:
-1. اطمینان حاصل کنید پایتون نصب است
-2. دستور: pip install -r requirements.txt
-3. دستور: python "{exec_info['name']}"
-4. مرورگر: http://localhost:5000
-اطلاعات سیستم:
-سیستم عامل: {platform.system()}
-معماری: {platform.architecture()[0]}
-"""
-        info_file = os.path.join(target_path, 'BACKUP_INFO.txt')
-        with open(info_file, 'w', encoding='utf-8') as f:
-            f.write(info_content)
-        return True, f"کپی خودکار انجام شد. {len(copied_files)} فایل در {target_path}"
-    except Exception as e:
-        return False, f"خطا در کپی خودکار: {str(e)}"
+# ============================================================
+# اجرای اولیه دیتابیس (فقط برای Render)
+# ============================================================
+try:
+    get_db()
+except Exception as e:
+    print(f"خطا در مقداردهی اولیه دیتابیس: {e}")
 
-def get_flash_drives():
-    """شناسایی فلش‌های مموری متصل به سیستم"""
-    flash_drives = []
-    if platform.system() == "Windows":
-        # برای ویندوز
-        for partition in psutil.disk_partitions():
-            if 'removable' in partition.opts:
-                try:
-                    usage = psutil.disk_usage(partition.mountpoint)
-                    # فقط فلش‌هایی که فضای کافی دارند (بیش از 100MB آزاد)
-                    if usage.free > 100 * 1024 * 1024:
-                        drive_info = {
-                            'device': partition.device,
-                            'mountpoint': partition.mountpoint,
-                            'total_size_gb': round(usage.total / (1024**3), 1),
-                            'free_space_gb': round(usage.free / (1024**3), 1),
-                            'free_space_mb': round(usage.free / (1024**2), 1),
-                            'file_system': partition.fstype
-                        }
-                        flash_drives.append(drive_info)
-                except (PermissionError, OSError):
-                    continue
+# ============================================================
+# سیستم احراز هویت
+# ============================================================
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_id' in session: return redirect(url_for('index'))
+    if request.method == 'POST':
+        conn = get_db()
+        if IS_OFFLINE:
+            user = conn.execute("SELECT * FROM users WHERE username = ? AND is_active = 1", (request.form['username'],)).fetchone()
+        else:
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE username = %s AND is_active = TRUE", (request.form['username'],))
+            user = cur.fetchone()
+            cur.close()
+        conn.close()
+        if user and check_password_hash(user['password_hash'], request.form['password']):
+            session.update({'user_id': user['id'], 'username': user['username'], 'role': user['role'], 'permissions': user['permissions']})
+            conn = get_db()
+            now_greg = datetime.now().isoformat()
+            now_jalali = jdatetime.datetime.now().strftime('%Y/%m/%d %H:%M')
+            if IS_OFFLINE:
+                conn.execute("UPDATE users SET last_login_greg = ?, last_login_jalali = ? WHERE id = ?", (now_greg, now_jalali, user['id']))
+            else:
+                cur = conn.cursor()
+                cur.execute("UPDATE users SET last_login_greg = %s, last_login_jalali = %s WHERE id = %s", (now_greg, now_jalali, user['id']))
+                cur.close()
+            conn.commit(); conn.close()
+            flash('ورود موفقیت‌آمیز بود.', 'success')
+            return redirect(url_for('index'))
+        flash('نام کاربری یا رمز عبور نادرست است.', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear(); flash('خروج موفقیت‌آمیز بود.', 'success'); return redirect(url_for('login'))
+
+@app.route('/about')
+def about():
+    return render_template('about.html', current_date=jdatetime.datetime.now().strftime('%Y/%m/%d'))
+
+@app.route('/')
+@login_required
+def index():
+    conn = get_db()
+    if IS_OFFLINE:
+        count = conn.execute("SELECT COUNT(*) FROM invoices i WHERE (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.invoice_id = i.id) < i.total_amount").fetchone()[0]
     else:
-        # برای لینوکس و مک
-        for partition in psutil.disk_partitions():
-            if partition.fstype and ('vfat' in partition.fstype.lower() or 
-                                   'ntfs' in partition.fstype.lower() or 
-                                   'exfat' in partition.fstype.lower() or
-                                   'fuseblk' in partition.fstype.lower()):
-                try:
-                    usage = psutil.disk_usage(partition.mountpoint)
-                    # فقط فلش‌هایی که فضای کافی دارند
-                    if usage.free > 100 * 1024 * 1024:
-                        drive_info = {
-                            'device': partition.device,
-                            'mountpoint': partition.mountpoint,
-                            'total_size_gb': round(usage.total / (1024**3), 1),
-                            'free_space_gb': round(usage.free / (1024**3), 1),
-                            'free_space_mb': round(usage.free / (1024**2), 1),
-                            'file_system': partition.fstype
-                        }
-                        flash_drives.append(drive_info)
-                except (PermissionError, OSError):
-                    continue
-    return flash_drives
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM invoices i WHERE (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.invoice_id = i.id) < i.total_amount")
+        count = cur.fetchone()['count']
+        cur.close()
+    conn.close()
+    return render_template('index.html', debtors_count=count)
+
+
 
 @app.route('/api/flash_drives')
 @login_required
@@ -397,12 +449,13 @@ def get_db():
     if IS_OFFLINE:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
-        # اگر جدول users وجود نداشت، init_db را صدا بزن
+        # چک کردن وجود جدول users
         try:
             conn.execute("SELECT 1 FROM users LIMIT 1")
         except sqlite3.OperationalError:
             conn.close()
-            init_db()
+            # اگر جدول وجود نداشت، جداول را بساز
+            _create_tables_sqlite()
             conn = sqlite3.connect(DB_PATH)
             conn.row_factory = sqlite3.Row
         return conn
@@ -413,14 +466,15 @@ def get_db():
         if 'sslmode' not in db_url:
             db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
         conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
-        # چک کردن وجود جدول users در PostgreSQL
+        # چک کردن وجود جدول users
         try:
             cur = conn.cursor()
             cur.execute("SELECT 1 FROM users LIMIT 1")
             cur.close()
         except Exception:
             conn.close()
-            init_db()
+            # اگر جدول وجود نداشت، جداول را بساز
+            _create_tables_postgres()
             conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
         return conn
 
@@ -450,9 +504,69 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
-def init_db():
-    conn = get_db()
+def _create_tables_sqlite():
+    """ساخت جداول و درج داده‌های اولیه برای SQLite (حالت آفلاین)"""
+    conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+    tables = [
+        "CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, sku TEXT, buy_price_tomans REAL, buy_price_usd REAL, sell_price REAL, warehouse TEXT, stock INTEGER, description TEXT, sales_count INTEGER DEFAULT 0)",
+        "CREATE TABLE IF NOT EXISTS invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, customer_name TEXT, customer_phone TEXT, date_jalali TEXT, date_greg TEXT, total_amount REAL, total_profit REAL, discount_amount REAL, discount_percent REAL, status TEXT)",
+        "CREATE TABLE IF NOT EXISTS invoice_items (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER, product_id INTEGER, product_name TEXT, sku TEXT, quantity INTEGER, unit_price REAL, profit_per_unit REAL)",
+        "CREATE TABLE IF NOT EXISTS payments (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id INTEGER, amount REAL, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_lists (id INTEGER PRIMARY KEY AUTOINCREMENT, supplier_name TEXT, created_date_jalali TEXT, created_date_greg TEXT, status TEXT, notes TEXT, estimated_total REAL, actual_total REAL)",
+        "CREATE TABLE IF NOT EXISTS purchase_list_items (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_list_id INTEGER, product_id INTEGER, product_name TEXT, sku TEXT, current_stock INTEGER, quantity_to_buy INTEGER, estimated_unit_price REAL, actual_unit_price REAL, estimated_total_price REAL, actual_total_price REAL, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_invoices (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_list_id INTEGER, supplier_name TEXT, invoice_date_jalali TEXT, invoice_date_greg TEXT, total_amount REAL, paid_amount REAL, remaining_amount REAL, payment_method TEXT, status TEXT, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, full_name TEXT, username TEXT UNIQUE, password_hash TEXT, role TEXT, permissions TEXT, is_active INTEGER DEFAULT 1)",
+        "CREATE TABLE IF NOT EXISTS permissions_master (id INTEGER PRIMARY KEY AUTOINCREMENT, permission_key TEXT UNIQUE, permission_name TEXT, category TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_payments (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_invoice_id INTEGER, amount REAL, payment_method TEXT, sheba_number TEXT, account_owner TEXT, bank_name TEXT, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT, receipt_number TEXT, created_by INTEGER, created_date_greg TEXT, created_date_jalali TEXT)",
+        "CREATE TABLE IF NOT EXISTS shop_expenses (id INTEGER PRIMARY KEY AUTOINCREMENT, expense_date_jalali TEXT, expense_date_greg TEXT, category TEXT, description TEXT, amount REAL, payment_method TEXT, receipt_number TEXT, notes TEXT, created_by INTEGER, created_date_greg TEXT, created_date_jalali TEXT)"
+    ]
+    for query in tables:
+        cur.execute(query)
+    conn.commit()
+    
+    # درج کاربر پیش‌فرض
+    cur.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'")
+    if cur.fetchone()[0] == 0:
+        ph = generate_password_hash('123456')
+        cur.execute("INSERT INTO users (full_name, username, password_hash, role, permissions) VALUES (?, ?, ?, ?, ?)", 
+                    ('مدیر سیستم', 'admin', ph, 'admin', 'all'))
+        conn.commit()
+    conn.close()
+
+def _create_tables_postgres():
+    """ساخت جداول و درج داده‌های اولیه برای PostgreSQL (حالت آنلاین)"""
+    db_url = os.environ.get('DATABASE_URL')
+    if 'sslmode' not in db_url:
+        db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
+    conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+    cur = conn.cursor()
+    tables = [
+        "CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name TEXT, sku TEXT, buy_price_tomans REAL, buy_price_usd REAL, sell_price REAL, warehouse TEXT, stock INTEGER, description TEXT, sales_count INTEGER DEFAULT 0)",
+        "CREATE TABLE IF NOT EXISTS invoices (id SERIAL PRIMARY KEY, customer_name TEXT, customer_phone TEXT, date_jalali TEXT, date_greg TEXT, total_amount REAL, total_profit REAL, discount_amount REAL, discount_percent REAL, status TEXT)",
+        "CREATE TABLE IF NOT EXISTS invoice_items (id SERIAL PRIMARY KEY, invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE, product_id INTEGER, product_name TEXT, sku TEXT, quantity INTEGER, unit_price REAL, profit_per_unit REAL)",
+        "CREATE TABLE IF NOT EXISTS payments (id SERIAL PRIMARY KEY, invoice_id INTEGER REFERENCES invoices(id) ON DELETE CASCADE, amount REAL, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_lists (id SERIAL PRIMARY KEY, supplier_name TEXT, created_date_jalali TEXT, created_date_greg TEXT, status TEXT, notes TEXT, estimated_total REAL, actual_total REAL)",
+        "CREATE TABLE IF NOT EXISTS purchase_list_items (id SERIAL PRIMARY KEY, purchase_list_id INTEGER REFERENCES purchase_lists(id) ON DELETE CASCADE, product_id INTEGER, product_name TEXT, sku TEXT, current_stock INTEGER, quantity_to_buy INTEGER, estimated_unit_price REAL, actual_unit_price REAL, estimated_total_price REAL, actual_total_price REAL, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_invoices (id SERIAL PRIMARY KEY, purchase_list_id INTEGER REFERENCES purchase_lists(id), supplier_name TEXT, invoice_date_jalali TEXT, invoice_date_greg TEXT, total_amount REAL, paid_amount REAL, remaining_amount REAL, payment_method TEXT, status TEXT, notes TEXT)",
+        "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, full_name TEXT, username TEXT UNIQUE, password_hash TEXT, role TEXT, permissions TEXT, is_active BOOLEAN DEFAULT TRUE)",
+        "CREATE TABLE IF NOT EXISTS permissions_master (id SERIAL PRIMARY KEY, permission_key TEXT UNIQUE, permission_name TEXT, category TEXT, description TEXT)",
+        "CREATE TABLE IF NOT EXISTS purchase_payments (id SERIAL PRIMARY KEY, purchase_invoice_id INTEGER REFERENCES purchase_invoices(id) ON DELETE CASCADE, amount REAL, payment_method TEXT, sheba_number TEXT, account_owner TEXT, bank_name TEXT, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT, receipt_number TEXT, created_by INTEGER REFERENCES users(id), created_date_greg TEXT, created_date_jalali TEXT)",
+        "CREATE TABLE IF NOT EXISTS shop_expenses (id SERIAL PRIMARY KEY, expense_date_jalali TEXT, expense_date_greg TEXT, category TEXT, description TEXT, amount REAL, payment_method TEXT, receipt_number TEXT, notes TEXT, created_by INTEGER REFERENCES users(id), created_date_greg TEXT, created_date_jalali TEXT)"
+    ]
+    for query in tables:
+        cur.execute(query)
+    conn.commit()
+    
+    # درج کاربر پیش‌فرض
+    cur.execute("SELECT COUNT(*) AS count FROM users WHERE username = 'admin'")
+    if cur.fetchone()['count'] == 0:
+        ph = generate_password_hash('123456')
+        cur.execute("INSERT INTO users (full_name, username, password_hash, role, permissions) VALUES (%s, %s, %s, %s, %s)", 
+                    ('مدیر سیستم', 'admin', ph, 'admin', 'all'))
+        conn.commit()
+    cur.close()
+    conn.close()
     
     # ============================================================
     # ۱. ساخت تمام جداول (هم آنلاین و هم آفلاین)
@@ -3250,6 +3364,12 @@ def start_server():
         print(f"خطا در راه‌اندازی سرور: {e}")
         return False
     return True
+
+# اجرای اولیه دیتابیس
+try:
+    get_db()
+except Exception as e:
+    print(f"خطا در مقداردهی اولیه دیتابیس: {e}")
 
 if __name__ == '__main__':
     init_db()
