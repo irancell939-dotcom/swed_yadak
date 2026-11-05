@@ -158,60 +158,91 @@
             .card { margin-bottom: 16px; }
         }
 
+
+        /* پوسته جدید: نوار بالا و منوی همبرگری کشویی از چپ */
+        body { padding-top: 78px; }
+        .app-topbar { position:fixed; inset:0 0 auto 0; z-index:1030; height:78px; background:linear-gradient(110deg,#142b49,#315b91 58%,#6b68a8); box-shadow:0 8px 28px rgba(25,45,75,.18); }
+        .topbar-inner { max-width:1500px; height:100%; margin:auto; padding:0 22px; display:flex; align-items:center; gap:18px; }
+        .menu-toggle { width:46px;height:46px;border:1px solid #ffffff42;border-radius:14px;background:#ffffff19;color:#fff;font-size:1.2rem;display:grid;place-items:center;transition:.2s; }
+        .menu-toggle:hover { background:#ffffff30; transform:translateY(-2px); }
+        .brand-lockup { display:flex;align-items:center;gap:11px;color:white;text-decoration:none;margin-inline-end:auto; }
+        .brand-lockup strong { display:block;font-size:1.22rem;line-height:1.4;font-weight:900; }
+        .brand-lockup small { display:block;color:#dbe8ff;font-size:.72rem; }
+        .brand-mark { width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(140deg,#ffcf78,#ff9e58);color:#17304e;font-size:1.3rem;box-shadow:0 5px 14px #081b3333;flex:0 0 auto; }
+        .topbar-user { display:flex;align-items:center;gap:9px;color:#fff; }
+        .user-avatar { width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#ffffff24;color:white;border:1px solid #ffffff45; }
+        .user-label { font-size:.86rem;font-weight:700; }.user-label small { display:block;color:#dbe8ff;font-size:.68rem;font-weight:400; }
+        .drawer-backdrop { position:fixed;inset:0;background:rgba(8,20,38,.52);backdrop-filter:blur(3px);z-index:1040;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s; }
+        .app-drawer { position:fixed;top:0;bottom:0;left:0;width:min(340px,88vw);z-index:1050;background:linear-gradient(180deg,#fff 0%,#f5f8ff 100%);box-shadow:15px 0 45px #071a3333;transform:translateX(-105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;direction:rtl;text-align:right; }
+        body.drawer-open .app-drawer { transform:translateX(0); } body.drawer-open .drawer-backdrop { opacity:1;visibility:visible; }
+        .drawer-head { min-height:82px;padding:17px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(110deg,#173250,#315b91);color:#fff; }
+        .drawer-brand { display:flex;align-items:center;gap:10px; }.drawer-brand strong { display:block;font-weight:900;font-size:1.08rem; }.drawer-brand small { color:#d9e7fb;font-size:.72rem; }
+        .drawer-close { border:0;width:38px;height:38px;border-radius:12px;background:#ffffff20;color:#fff;font-size:1.05rem; }
+        .drawer-user { margin:14px 14px 6px;padding:12px;border-radius:15px;background:#edf4ff;display:flex;align-items:center;gap:10px;color:#263e5c; }.drawer-user .user-avatar { background:#315b91;border:0; }.drawer-user strong,.drawer-user small { display:block; }.drawer-user small { color:#74849a;font-size:.75rem;margin-top:2px; }
+        .drawer-nav { padding:7px 12px 16px;overflow-y:auto;flex:1; }.drawer-caption { display:block;padding:14px 10px 6px;color:#8998ad;font-size:.7rem;font-weight:900;letter-spacing:.2px; }
+        .drawer-link { display:flex;align-items:center;gap:12px;min-height:45px;padding:9px 12px;margin:3px 0;border-radius:12px;color:#435570;text-decoration:none;font-size:.86rem;font-weight:650;transition:.18s; }
+        .drawer-link i { width:22px;text-align:center;color:#6483b2;font-size:1rem; }.drawer-link:hover { background:#e9f1ff;color:#234d83;transform:translateX(-2px); }.drawer-link.active { background:linear-gradient(100deg,#315b91,#597bb1);color:#fff;box-shadow:0 5px 14px #315b9128; }.drawer-link.active i { color:#fff; }
+        .drawer-badge { margin-right:auto;font-size:.62rem;background:#ffe3a8;color:#76501a;border-radius:20px;padding:3px 7px; }
+        .drawer-logout { margin:8px 14px 5px;padding:12px;border-radius:12px;background:#fff0f1;color:#c94b5a;text-decoration:none;font-weight:800;text-align:center; }.drawer-foot { text-align:center;padding:10px 8px 14px;color:#96a2b3;font-size:.67rem; }
+        main.container { min-height:calc(100vh - 190px); }
+        @media(max-width:600px) { body { padding-top:68px; } .app-topbar { height:68px; }.topbar-inner { padding:0 12px;gap:11px; }.menu-toggle { width:42px;height:42px; }.brand-mark { width:39px;height:39px;border-radius:12px; }.brand-lockup strong { font-size:1.05rem; }.brand-lockup small { font-size:.64rem; }.user-label { display:none; }.topbar-user .user-avatar { width:35px;height:35px; } main.container { padding:15px 10px!important; } footer { margin-top:25px; } }
+        @media(min-width:601px) { .app-drawer { width:350px; } }
+
     </style>
 </head>
 <body>
-    <!-- منوی بالا -->
-    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-truck me-2"></i> سوئد یدک
-            </a>
-            
-            {% if session.user_id %}
-            <div class="user-welcome d-none d-lg-block">
-                <i class="fas fa-user me-1"></i>
-                خوش آمدید، {{ session.username }}
-                {% if session.role == 'admin' %}
-                <span class="badge bg-warning ms-1">مدیر</span>
-                {% endif %}
-            </div>
-            {% endif %}
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+    <!-- نوار بالایی و منوی کشویی سمت چپ -->
+    <header class="app-topbar">
+        <div class="topbar-inner">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="باز کردن منو" aria-controls="appDrawer" aria-expanded="false">
+                <i class="fas fa-bars"></i>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if session.user_id %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}"><i class="fas fa-home me-1"></i>خانه</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('products') }}"><i class="fas fa-boxes me-1"></i>کالاها</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('invoice') }}"><i class="fas fa-file-invoice me-1"></i>فاکتور جدید</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('invoices') }}"><i class="fas fa-list me-1"></i>فاکتورها</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('reports') }}"><i class="fas fa-chart-line me-1"></i>گزارش‌ها</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('date_range_report') }}"><i class="fas fa-calendar-week me-1"></i>گزارش بین دو تاریخ</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('shop_expenses') }}"><i class="fas fa-receipt me-1"></i>هزینه‌های مغازه</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('stock_report') }}"><i class="fas fa-boxes me-1"></i>موجودی کالاها</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('supplier_debts') }}"><i class="fas fa-hand-holding-usd me-1"></i>بدهی به تامین‌کنندگان</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('purchase_invoices_list') }}"><i class="fas fa-shopping-cart me-1"></i>فاکتورهای خرید</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('zakat_calculator') }}"><i class="fas fa-mosque me-1"></i>زکات</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('backup_page') }}"><i class="fas fa-database me-1"></i>پشتیبان</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('debtors') }}"><i class="fas fa-user-minus me-1"></i>بدهکاران</a></li>
-                    
-                    {% if session.role == 'admin' %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('users_management') }}"><i class="fas fa-users-cog me-1"></i>مدیریت کاربران</a></li>
-                    {% endif %}
-                    
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}"><i class="fas fa-info-circle me-1"></i>درباره برنامه</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i>خروج</a></li>
-                    
-                    {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt me-1"></i>ورود</a></li>
-                    {% endif %}
-                </ul>
+            <a class="brand-lockup" href="{{ url_for('index') }}">
+                <span class="brand-mark"><i class="fas fa-truck-fast"></i></span>
+                <span><strong>سوئد یدک</strong><small>مرجع تخصصی قطعات اسکانیا</small></span>
+            </a>
+            <div class="topbar-user">
+                {% if session.user_id %}
+                <span class="user-avatar"><i class="fas fa-user"></i></span>
+                <span class="user-label">{{ session.username }}{% if session.role == 'admin' %}<small>مدیر سیستم</small>{% endif %}</span>
+                {% else %}<a href="{{ url_for('login') }}" class="btn btn-light btn-sm">ورود</a>{% endif %}
             </div>
         </div>
-    </nav>
+    </header>
+
+    {% if session.user_id %}
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="app-drawer" id="appDrawer" aria-hidden="true">
+        <div class="drawer-head">
+            <div class="drawer-brand"><span class="brand-mark"><i class="fas fa-truck-fast"></i></span><div><strong>سوئد یدک</strong><small>پنل مدیریت فروشگاه</small></div></div>
+            <button class="drawer-close" id="drawerClose" type="button" aria-label="بستن منو"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="drawer-user"><span class="user-avatar"><i class="fas fa-user"></i></span><div><strong>{{ session.username }}</strong><small>{% if session.role == 'admin' %}مدیر سیستم{% else %}کاربر فروشگاه{% endif %}</small></div></div>
+        <nav class="drawer-nav">
+            <span class="drawer-caption">صفحات اصلی</span>
+            <a class="drawer-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}"><i class="fas fa-house"></i><span>داشبورد</span></a>
+            <a class="drawer-link {% if request.endpoint == 'products' %}active{% endif %}" href="{{ url_for('products') }}"><i class="fas fa-boxes-stacked"></i><span>مدیریت کالاها</span></a>
+            <a class="drawer-link {% if request.endpoint == 'invoice' %}active{% endif %}" href="{{ url_for('invoice') }}"><i class="fas fa-file-circle-plus"></i><span>صدور فاکتور جدید</span><b class="drawer-badge">جدید</b></a>
+            <a class="drawer-link {% if request.endpoint in ['invoices','invoice_detail','edit_invoice'] %}active{% endif %}" href="{{ url_for('invoices') }}"><i class="fas fa-file-invoice"></i><span>فاکتورهای فروش</span></a>
+            <span class="drawer-caption">گزارش و حسابداری</span>
+            <a class="drawer-link" href="{{ url_for('reports') }}"><i class="fas fa-chart-pie"></i><span>گزارش‌های فروش</span></a>
+            <a class="drawer-link" href="{{ url_for('date_range_report') }}"><i class="fas fa-calendar-days"></i><span>گزارش بین دو تاریخ</span></a>
+            <a class="drawer-link" href="{{ url_for('debtors') }}"><i class="fas fa-user-clock"></i><span>بدهکاران</span></a>
+            <a class="drawer-link" href="{{ url_for('shop_expenses') }}"><i class="fas fa-wallet"></i><span>هزینه‌های مغازه</span></a>
+            <span class="drawer-caption">خرید و انبار</span>
+            <a class="drawer-link" href="{{ url_for('stock_report') }}"><i class="fas fa-warehouse"></i><span>گزارش موجودی</span></a>
+            <a class="drawer-link" href="{{ url_for('supplier_debts') }}"><i class="fas fa-hand-holding-dollar"></i><span>بدهی تأمین‌کنندگان</span></a>
+            <a class="drawer-link" href="{{ url_for('purchase_invoices_list') }}"><i class="fas fa-cart-flatbed"></i><span>فاکتورهای خرید</span></a>
+            <a class="drawer-link" href="{{ url_for('zakat_calculator') }}"><i class="fas fa-calculator"></i><span>محاسبه زکات</span></a>
+            <span class="drawer-caption">تنظیمات</span>
+            <a class="drawer-link" href="{{ url_for('backup_page') }}"><i class="fas fa-database"></i><span>پشتیبان‌گیری</span></a>
+            {% if session.role == 'admin' %}<a class="drawer-link" href="{{ url_for('users_management') }}"><i class="fas fa-users-gear"></i><span>مدیریت کاربران</span></a>{% endif %}
+            <a class="drawer-link" href="{{ url_for('about') }}"><i class="fas fa-circle-info"></i><span>درباره برنامه</span></a>
+        </nav>
+        <a class="drawer-logout" href="{{ url_for('logout') }}"><i class="fas fa-right-from-bracket"></i> خروج از حساب</a>
+        <div class="drawer-foot">فروشگاه سوئد یدک · قطعات تخصصی اسکانیا</div>
+    </aside>
+    {% endif %}
 
     <!-- محتوا -->
     <main class="container py-4">
@@ -252,6 +283,18 @@
     
     <script>
       (function(){ const offset = -new Date().getTimezoneOffset(); document.cookie = 'tz_offset=' + offset + '; path=/; max-age=31536000; SameSite=Lax'; })();
+    </script>
+
+    <script>
+    (function(){
+      const body=document.body, toggle=document.getElementById('menuToggle'), close=document.getElementById('drawerClose'), back=document.getElementById('drawerBackdrop'), drawer=document.getElementById('appDrawer');
+      if(!toggle || !drawer) return;
+      function openMenu(){body.classList.add('drawer-open');toggle.setAttribute('aria-expanded','true');drawer.setAttribute('aria-hidden','false');}
+      function closeMenu(){body.classList.remove('drawer-open');toggle.setAttribute('aria-expanded','false');drawer.setAttribute('aria-hidden','true');}
+      toggle.addEventListener('click',openMenu); if(close) close.addEventListener('click',closeMenu); if(back) back.addEventListener('click',closeMenu);
+      document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
+      drawer.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
+    })();
     </script>
     {% block scripts %}{% endblock %}
 </body>
