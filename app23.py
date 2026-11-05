@@ -457,6 +457,13 @@ def init_db():
         from db_backend import init_postgres_schema
         init_postgres_schema(DATABASE_URL)
         conn = get_db()
+        # افزودن ستون‌های تاریخ و جدول سوابق قیمت به دیتابیس‌های قبلی
+        for col, ddl in [('price_updated_jalali', 'TEXT'), ('last_edited_jalali', 'TEXT')]:
+            try: conn.execute(f'ALTER TABLE products ADD COLUMN {col} {ddl}')
+            except Exception: pass
+        conn.execute('''CREATE TABLE IF NOT EXISTS product_price_history (
+            id BIGSERIAL PRIMARY KEY, product_id BIGINT NOT NULL, product_name TEXT, field_name TEXT NOT NULL,
+            old_price DOUBLE PRECISION, new_price DOUBLE PRECISION, changed_at_jalali TEXT NOT NULL)''')
         if not conn.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]:
             ph = generate_password_hash(os.environ.get('DEFAULT_ADMIN_PASSWORD', '123456'))
             conn.execute('INSERT INTO users (full_name, username, password_hash, role, permissions, created_date_greg, created_date_jalali) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -514,6 +521,16 @@ def init_db():
         conn.execute("ALTER TABLE products ADD COLUMN sales_count INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
         pass
+
+    # تاریخ آخرین قیمت‌گذاری و آخرین ویرایش کالا
+    for col in ('price_updated_jalali', 'last_edited_jalali'):
+        try:
+            conn.execute(f'ALTER TABLE products ADD COLUMN {col} TEXT')
+        except sqlite3.OperationalError:
+            pass
+    conn.execute('''CREATE TABLE IF NOT EXISTS product_price_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, product_id INTEGER NOT NULL, product_name TEXT,
+        field_name TEXT NOT NULL, old_price REAL, new_price REAL, changed_at_jalali TEXT NOT NULL)''')
 
     # جداول موجود
     conn.execute('''
@@ -952,19 +969,25 @@ def products():
             description = request.form.get('description', '').strip() or None
             product_id = request.form.get('product_id')
 
+            now_jalali = browser_jalali_now().strftime('%Y/%m/%d %H:%M')
             if product_id:
-                cursor = conn.execute('''
-                    UPDATE products SET 
-                    name = ?, sku = ?, buy_price_tomans = ?, buy_price_usd = ?, 
-                    sell_price = ?, warehouse = ?, stock = ?, description = ?
-                    WHERE id = ?
-                ''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, product_id))
+                old = conn.execute('SELECT * FROM products WHERE id = ?', (product_id,)).fetchone()
+                if old:
+                    for field, label, new_value in [('buy_price_tomans', 'قیمت خرید (تومان)', buy_tomans), ('buy_price_usd', 'قیمت خرید (دلار)', usd), ('sell_price', 'قیمت فروش', sell_price)]:
+                        old_value = old[field]
+                        if (old_value is None) != (new_value is None) or (old_value is not None and new_value is not None and float(old_value) != float(new_value)):
+                            conn.execute('INSERT INTO product_price_history (product_id, product_name, field_name, old_price, new_price, changed_at_jalali) VALUES (?, ?, ?, ?, ?, ?)', (product_id, name, label, old_value, new_value, now_jalali))
+                    price_changed = any(((old[f] is None) != (v is None)) or (old[f] is not None and v is not None and float(old[f]) != float(v)) for f, v in [('buy_price_tomans', buy_tomans), ('buy_price_usd', usd), ('sell_price', sell_price)])
+                    conn.execute('''UPDATE products SET name=?, sku=?, buy_price_tomans=?, buy_price_usd=?, sell_price=?, warehouse=?, stock=?, description=?, last_edited_jalali=?, price_updated_jalali=CASE WHEN ? THEN ? ELSE price_updated_jalali END WHERE id=?''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, now_jalali, price_changed, now_jalali, product_id))
                 flash('کالا با موفقیت ویرایش شد.', 'success')
             else:
                 cursor = conn.execute('''
-                    INSERT INTO products (name, sku, buy_price_tomans, buy_price_usd, sell_price, warehouse, stock, description)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description))
+                    INSERT INTO products (name, sku, buy_price_tomans, buy_price_usd, sell_price, warehouse, stock, description, price_updated_jalali, last_edited_jalali)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, now_jalali, now_jalali))
+                new_id = cursor.lastrowid
+                for label, value in [('قیمت خرید (تومان)', buy_tomans), ('قیمت خرید (دلار)', usd), ('قیمت فروش', sell_price)]:
+                    conn.execute('INSERT INTO product_price_history (product_id, product_name, field_name, old_price, new_price, changed_at_jalali) VALUES (?, ?, ?, ?, ?, ?)', (new_id, name, label, None, value, now_jalali))
                 flash('کالا با موفقیت اضافه شد.', 'success')
             conn.commit()
         except ValueError as e:
@@ -1539,6 +1562,21 @@ def do_full_backup():
 def download_backup(filename):
     return send_from_directory('backup', filename, as_attachment=True)
 
+@app.route('/product/<int:product_id>/price-history')
+@login_required
+@permission_required('products.view')
+def product_price_history(product_id):
+    conn = get_db()
+    product = conn.execute('SELECT id, name, sku FROM products WHERE id = ?', (product_id,)).fetchone()
+    if not product:
+        conn.close()
+        flash('کالای موردنظر پیدا نشد.', 'danger')
+        return redirect(url_for('products'))
+    history = conn.execute('SELECT * FROM product_price_history WHERE product_id = ? ORDER BY id DESC', (product_id,)).fetchall()
+    conn.close()
+    return render_template('product_price_history.html', product=product, history=history)
+
+
 @app.route('/product/<int:product_id>/delete', methods=['POST'])
 @login_required
 @permission_required('products.delete')
@@ -2008,12 +2046,18 @@ def update_product(product_id):
         stock = int(stock_str) if stock_str else 0
         description = request.form.get('description', '').strip() or None
 
-        cursor = conn.execute('''
-            UPDATE products SET 
-            name = ?, sku = ?, buy_price_tomans = ?, buy_price_usd = ?, 
-            sell_price = ?, warehouse = ?, stock = ?, description = ?
-            WHERE id = ?
-        ''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, product_id))
+        now_jalali = browser_jalali_now().strftime('%Y/%m/%d %H:%M')
+        old = conn.execute('SELECT * FROM products WHERE id = ?', (product_id,)).fetchone()
+        if old:
+            changes = [('buy_price_tomans', 'قیمت خرید (تومان)', buy_tomans), ('buy_price_usd', 'قیمت خرید (دلار)', usd), ('sell_price', 'قیمت فروش', sell_price)]
+            price_changed = False
+            for field, label, value in changes:
+                previous = old[field]
+                changed = ((previous is None) != (value is None)) or (previous is not None and value is not None and float(previous) != float(value))
+                if changed:
+                    price_changed = True
+                    conn.execute('INSERT INTO product_price_history (product_id, product_name, field_name, old_price, new_price, changed_at_jalali) VALUES (?, ?, ?, ?, ?, ?)', (product_id, name, label, previous, value, now_jalali))
+            conn.execute('''UPDATE products SET name=?, sku=?, buy_price_tomans=?, buy_price_usd=?, sell_price=?, warehouse=?, stock=?, description=?, last_edited_jalali=?, price_updated_jalali=CASE WHEN ? THEN ? ELSE price_updated_jalali END WHERE id=?''', (name, sku, buy_tomans, usd, sell_price, warehouse, stock, description, now_jalali, price_changed, now_jalali, product_id))
         conn.commit()
         flash('کالا با موفقیت ویرایش شد.', 'success')
         return redirect(url_for('products'))
