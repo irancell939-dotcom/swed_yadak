@@ -235,7 +235,7 @@ let originalItems = {};
 let payments = [];
 // بارگذاری کالاهای موجود
 function loadProducts() {
-    fetch('/api/search_products?q=')
+    fetch('/api/search_products_all?q=')
         .then(res => res.json())
         .then(products => {
             renderProductList(products);
@@ -244,10 +244,10 @@ function loadProducts() {
 }
 // نمایش لیست کالاها
 function renderProductList(products) {
-    const search = document.getElementById('listSearch').value.toLowerCase();
+    const search = window.normalizePersianSearchText(document.getElementById('listSearch').value);
     const filtered = products.filter(p => 
-        p.name.toLowerCase().includes(search) || 
-        (p.sku && p.sku.toLowerCase().includes(search))
+        window.normalizePersianSearchText(p.name).includes(search) || 
+        (p.sku && window.normalizePersianSearchText(p.sku).includes(search))
     );
     let html = '<div class="list-group">';
     filtered.forEach(p => {
