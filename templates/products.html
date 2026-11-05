@@ -61,6 +61,8 @@
 .keyword-chip{border:1px solid #dbe5ef;background:#f8fafc;color:#243b53;border-radius:999px;padding:8px 14px;font-weight:600;transition:.18s}
 .keyword-chip:hover,.keyword-chip:focus{background:#0f766e;color:#fff;border-color:#0f766e;transform:translateY(-1px)}
 body.keyword-drawer-open{overflow:hidden}
+.keyword-drawer-search{position:relative;margin-top:16px}.keyword-drawer-search i{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#718096}.keyword-drawer-search input{padding-right:39px;border-radius:12px;min-height:44px}
+#productsTable tbody tr.product-saved-focus{outline:3px solid #16a34a;outline-offset:-3px;background:#ecfdf5!important;transition:background .4s}
 @media(max-width:575px){.product-search-toolbar{align-items:stretch}.product-search-field{flex-basis:100%}.btn-keyword{width:100%}.keyword-drawer{padding:18px}}
 </style>
 
@@ -103,6 +105,10 @@ body.keyword-drawer-open{overflow:hidden}
                         <div><strong><i class="fas fa-tags ms-2"></i>جستجوی سریع کالا</strong><small>با انتخاب هر واژه، کالاها فیلتر می‌شوند.</small></div>
                         <button type="button" class="keyword-drawer-close" id="keywordDrawerClose" aria-label="بستن">&times;</button>
                     </div>
+                    <div class="keyword-drawer-search">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="keywordSearchInput" class="form-control" placeholder="جستجوی کلیدواژه‌ها..." autocomplete="off">
+                    </div>
                     <div class="keyword-chips" id="keywordChips">
                         {% for word in ['لامپ','واشر','روغن','اورینگ','پمپ','بست','بوش','تسمه','سردکن','شیشه','شیلنگ','فیوز','لوازم','لوله','هرزگرد','واتر','پایه','چراغ','چسب','کاسه','کلید','کورکن','کیت','کیسه','گلگیر','پیچ','گیربکس','موتور','فلنچ','سنسور','درب'] %}
                         <button type="button" class="keyword-chip" data-keyword="{{ word }}">{{ word }}</button>
@@ -129,7 +135,7 @@ body.keyword-drawer-open{overflow:hidden}
                         </thead>
                         <tbody>
                             {% for p in products %}
-                            <tr>
+                            <tr id="product-{{ p.id }}" data-product-id="{{ p.id }}">
                                 <td>{{ p.name }}</td>
                                 <td>{{ p.sku or '—' }}</td>
                                 <td>{{ "{:,.0f}".format(p.buy_price_tomans) if p.buy_price_tomans else '—' }}</td>
@@ -589,12 +595,33 @@ globalProductSearch.addEventListener('input', filterProductRows);
     function closeDrawer(){ drawer.classList.remove('show'); backdrop.classList.remove('show'); drawer.setAttribute('aria-hidden','true'); document.body.classList.remove('keyword-drawer-open'); }
     openBtn.addEventListener('click',openDrawer); closeBtn.addEventListener('click',closeDrawer); backdrop.addEventListener('click',closeDrawer);
     document.addEventListener('keydown',e=>{if(e.key==='Escape') closeDrawer();});
+    const keywordSearch = document.getElementById('keywordSearchInput');
+    keywordSearch.addEventListener('input',()=>{
+        const q=window.normalizePersianSearchText(keywordSearch.value);
+        document.querySelectorAll('.keyword-chip').forEach(chip=>{
+            chip.hidden=!window.normalizePersianSearchText(chip.textContent).includes(q);
+        });
+    });
     document.querySelectorAll('.keyword-chip').forEach(btn=>btn.addEventListener('click',()=>{
         globalProductSearch.value=btn.dataset.keyword || btn.textContent.trim();
         filterProductRows(); closeDrawer(); globalProductSearch.focus();
     }));
     document.getElementById('clearKeywordSearch').addEventListener('click',()=>{globalProductSearch.value='';filterProductRows();closeDrawer();globalProductSearch.focus();});
 })();
+
+// پس از ذخیره کالا، همان ردیف در فهرست در مرکز دید قرار بگیرد.
+document.addEventListener('DOMContentLoaded',()=>{
+    const params=new URLSearchParams(location.search);
+    const savedId=params.get('focus');
+    if(savedId){
+        const row=document.getElementById('product-'+savedId);
+        if(row){
+            row.scrollIntoView({behavior:'smooth',block:'center'});
+            row.classList.add('product-saved-focus');
+            setTimeout(()=>row.classList.remove('product-saved-focus'),5000);
+        }
+    }
+});
 
 // فرمت هوشمند عدد برای نمایش (اعداد صحیح با جداکننده هزارگان)
 function smartFormatNumber(num) {
