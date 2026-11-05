@@ -81,6 +81,7 @@
             {'icon':'fas fa-hand-holding-usd','color':'#2a9d8f','title':'بدهی تامین‌کنندگان','text':'پیگیری بدهی‌های پرداخت نشده','url':url_for('supplier_debts'),'btn':'مشاهده بدهی','btn_color':'success'},
             {'icon':'fas fa-mosque','color':'#e76f51','title':'محاسبه زکات','text':'محاسبه ۲.۵٪ از ارزش کالاهای موجود','url':url_for('zakat_calculator'),'btn':'محاسبه زکات','btn_color':'danger'},
             {'icon':'fas fa-user-minus','color':'#c0392b','title':'بدهکاران','text': debtors_text,'url':url_for('debtors'),'btn':'مشاهده بدهکاران','btn_color':'danger'},
+            {'icon':'fas fa-download','color':'#17a2b8','title':'دانلود دیتابیس آفلاین','text':'دریافت فایل database.db برای کار بدون اینترنت','url':url_for('download_offline_db'),'btn':'دانلود دیتابیس','btn_color':'info'},
             {'icon':'fas fa-database','color':'#6c757d','title':'پشتیبان‌گیری','text':'ذخیره و بازیابی اطلاعات فروشگاه','url':url_for('backup_page'),'btn':'مدیریت پشتیبان','btn_color':'secondary'},
         ] %}
         
@@ -140,7 +141,6 @@
     .display-6 {
         font-size: 2.2rem;
     }
-    /* افکت برای دکمه‌های کارت */
     .card .btn {
         font-weight: 600;
         transition: all 0.3s;
@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadQuickStats() {
+    // تعداد کالاها
     fetch('/api/search_products_all?q=')
         .then(response => response.json())
         .then(data => {
@@ -166,6 +167,7 @@ function loadQuickStats() {
         })
         .catch(error => console.error('Error:', error));
 
+    // تعداد فاکتورهای امروز
     const today = new Date().toLocaleDateString('fa-IR');
     fetch('/api/shop_expenses?start_date=' + today + '&end_date=' + today)
         .then(response => response.json())
