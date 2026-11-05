@@ -397,6 +397,14 @@ def get_db():
     if IS_OFFLINE:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
+        # اگر جدول users وجود نداشت، init_db را صدا بزن
+        try:
+            conn.execute("SELECT 1 FROM users LIMIT 1")
+        except sqlite3.OperationalError:
+            conn.close()
+            init_db()
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
         return conn
     else:
         db_url = os.environ.get('DATABASE_URL')
@@ -404,7 +412,17 @@ def get_db():
             raise RuntimeError("در حالت آنلاین، متغیر DATABASE_URL الزامی است.")
         if 'sslmode' not in db_url:
             db_url += '?sslmode=require' if '?' not in db_url else '&sslmode=require'
-        return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        # چک کردن وجود جدول users در PostgreSQL
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM users LIMIT 1")
+            cur.close()
+        except Exception:
+            conn.close()
+            init_db()
+            conn = psycopg2.connect(db_url, cursor_factory=RealDictCursor)
+        return conn
 
 def normalize_persian_text(text):
     """تبدیل حروف فارسی به فرم استاندارد برای جستجو"""
