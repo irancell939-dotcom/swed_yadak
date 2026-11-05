@@ -42,6 +42,26 @@
 .tab-content{background:#fff;border-radius:0 0 14px 14px;box-shadow:0 8px 25px #23395b0c}
 .nav-tabs .nav-link{font-weight:700;color:#53627a}
 .nav-tabs .nav-link.active{color:#1769aa;border-color:#dce8f8 #dce8f8 #fff}
+
+/* نوار جستجو و کشوی کلیدواژه‌ها */
+.product-search-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.product-search-field{position:relative;flex:1 1 260px}
+.product-search-field>i{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#718096;z-index:2}
+.product-search-field input{padding-right:42px;min-height:46px;border-radius:13px}
+.btn-keyword{min-height:46px;border:0;border-radius:13px;padding:0 18px;color:#fff;background:linear-gradient(135deg,#0f766e,#0e7490);font-weight:700;box-shadow:0 5px 16px #0f766e2b}
+.keyword-drawer-backdrop{position:fixed;inset:0;background:rgba(10,20,35,.48);z-index:1080;opacity:0;visibility:hidden;transition:.25s}
+.keyword-drawer{position:fixed;z-index:1081;top:0;right:0;width:min(390px,90vw);height:100dvh;background:#fff;box-shadow:-15px 0 45px #102a4330;transform:translateX(110%);transition:transform .28s ease;padding:22px;overflow-y:auto;direction:rtl}
+.keyword-drawer.show{transform:translateX(0)}
+.keyword-drawer-backdrop.show{opacity:1;visibility:visible}
+.keyword-drawer-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid #e8edf3}
+.keyword-drawer-head strong{display:block;font-size:1.08rem;color:#172b4d}
+.keyword-drawer-head small{display:block;color:#718096;margin-top:6px}
+.keyword-drawer-close{border:0;background:#f1f5f9;border-radius:10px;width:36px;height:36px;font-size:25px;line-height:1;color:#334155}
+.keyword-chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:20px}
+.keyword-chip{border:1px solid #dbe5ef;background:#f8fafc;color:#243b53;border-radius:999px;padding:8px 14px;font-weight:600;transition:.18s}
+.keyword-chip:hover,.keyword-chip:focus{background:#0f766e;color:#fff;border-color:#0f766e;transform:translateY(-1px)}
+body.keyword-drawer-open{overflow:hidden}
+@media(max-width:575px){.product-search-toolbar{align-items:stretch}.product-search-field{flex-basis:100%}.btn-keyword{width:100%}.keyword-drawer{padding:18px}}
 </style>
 
 <div class="products-hero"><h2><i class="fas fa-boxes-stacked me-2"></i> مدیریت هوشمند کالاها</h2><p>قیمت‌ها، موجودی و تاریخچه تغییرات قیمت را یک‌جا مدیریت کنید.</p></div>
@@ -68,9 +88,28 @@
         <div class="tab-content" id="productTabsContent">
             <!-- تب لیست کالاها -->
             <div class="tab-pane fade {% if not edit_product %}show active{% endif %}" id="list" role="tabpanel">
-                <div class="mb-3">
-                    <input type="text" id="globalSearch" class="form-control" placeholder="جستجوی زنده در لیست کالاها...">
+                <div class="product-search-toolbar mb-3">
+                    <div class="product-search-field">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="globalSearch" class="form-control" placeholder="نام کالا، کد یا بخشی از عنوان را جستجو کنید..." autocomplete="off">
+                    </div>
+                    <button type="button" class="btn btn-keyword" id="keywordDrawerOpen">
+                        <i class="fas fa-tags ms-1"></i> کلیدواژه‌های سریع
+                    </button>
                 </div>
+                <div class="keyword-drawer-backdrop" id="keywordDrawerBackdrop"></div>
+                <aside class="keyword-drawer" id="keywordDrawer" aria-hidden="true" aria-label="کلیدواژه‌های جستجوی کالا">
+                    <div class="keyword-drawer-head">
+                        <div><strong><i class="fas fa-tags ms-2"></i>جستجوی سریع کالا</strong><small>با انتخاب هر واژه، کالاها فیلتر می‌شوند.</small></div>
+                        <button type="button" class="keyword-drawer-close" id="keywordDrawerClose" aria-label="بستن">&times;</button>
+                    </div>
+                    <div class="keyword-chips" id="keywordChips">
+                        {% for word in ['لامپ','واشر','روغن','اورینگ','پمپ','بست','بوش','تسمه','سردکن','شیشه','شیلنگ','فیوز','لوازم','لوله','هرزگرد','واتر','پایه','چراغ','چسب','کاسه','کلید','کورکن','کیت','کیسه','گلگیر','پیچ','گیربکس','موتور','فلنچ','سنسور','درب'] %}
+                        <button type="button" class="keyword-chip" data-keyword="{{ word }}">{{ word }}</button>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary w-100 mt-3" id="clearKeywordSearch"><i class="fas fa-eraser ms-1"></i> پاک کردن جستجو</button>
+                </aside>
                 {% if products %}
                 <div class="table-responsive">
                     <table class="table table-hover" id="productsTable">
@@ -529,14 +568,33 @@ function updateUsdDisplay(inputId, displayId) {
     display.textContent = displayText;
 }
 
-// جستجوی زنده
-document.getElementById('globalSearch').addEventListener('input', function() {
-    const q = this.value.toLowerCase();
+// جستجوی زنده با یکسان‌سازی «ي/ی» و «ك/ک»
+const globalProductSearch = document.getElementById('globalSearch');
+function filterProductRows() {
+    const q = window.normalizePersianSearchText(globalProductSearch.value);
     document.querySelectorAll('#productsTable tbody tr').forEach(row => {
-        const text = row.textContent.toLowerCase();
+        const text = window.normalizePersianSearchText(row.textContent);
         row.style.display = text.includes(q) ? '' : 'none';
     });
-});
+}
+globalProductSearch.addEventListener('input', filterProductRows);
+
+// کشوی کلیدواژه‌ها از سمت راست
+(function(){
+    const drawer = document.getElementById('keywordDrawer');
+    const backdrop = document.getElementById('keywordDrawerBackdrop');
+    const openBtn = document.getElementById('keywordDrawerOpen');
+    const closeBtn = document.getElementById('keywordDrawerClose');
+    function openDrawer(){ drawer.classList.add('show'); backdrop.classList.add('show'); drawer.setAttribute('aria-hidden','false'); document.body.classList.add('keyword-drawer-open'); }
+    function closeDrawer(){ drawer.classList.remove('show'); backdrop.classList.remove('show'); drawer.setAttribute('aria-hidden','true'); document.body.classList.remove('keyword-drawer-open'); }
+    openBtn.addEventListener('click',openDrawer); closeBtn.addEventListener('click',closeDrawer); backdrop.addEventListener('click',closeDrawer);
+    document.addEventListener('keydown',e=>{if(e.key==='Escape') closeDrawer();});
+    document.querySelectorAll('.keyword-chip').forEach(btn=>btn.addEventListener('click',()=>{
+        globalProductSearch.value=btn.dataset.keyword || btn.textContent.trim();
+        filterProductRows(); closeDrawer(); globalProductSearch.focus();
+    }));
+    document.getElementById('clearKeywordSearch').addEventListener('click',()=>{globalProductSearch.value='';filterProductRows();closeDrawer();globalProductSearch.focus();});
+})();
 
 // فرمت هوشمند عدد برای نمایش (اعداد صحیح با جداکننده هزارگان)
 function smartFormatNumber(num) {
