@@ -5,7 +5,8 @@ from psycopg2 import connect
 from psycopg2.extras import DictCursor
 
 TABLES = {
-'products': '''id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, sku TEXT, buy_price_tomans DOUBLE PRECISION NOT NULL, buy_price_usd DOUBLE PRECISION, sell_price DOUBLE PRECISION NOT NULL, warehouse TEXT, stock INTEGER DEFAULT 0, description TEXT, sales_count INTEGER DEFAULT 0''',
+'products': '''id BIGSERIAL PRIMARY KEY, name TEXT NOT NULL, sku TEXT, buy_price_tomans DOUBLE PRECISION NOT NULL, buy_price_usd DOUBLE PRECISION, sell_price DOUBLE PRECISION NOT NULL, warehouse TEXT, stock INTEGER DEFAULT 0, description TEXT, sales_count INTEGER DEFAULT 0, price_updated_jalali TEXT, last_edited_jalali TEXT''',
+'product_price_history': '''id BIGSERIAL PRIMARY KEY, product_id BIGINT NOT NULL, product_name TEXT, field_name TEXT NOT NULL, old_price DOUBLE PRECISION, new_price DOUBLE PRECISION, changed_at_jalali TEXT NOT NULL''',
 'invoices': '''id BIGSERIAL PRIMARY KEY, customer_name TEXT NOT NULL, customer_phone TEXT NOT NULL, date_jalali TEXT, date_greg TEXT, total_amount DOUBLE PRECISION, total_profit DOUBLE PRECISION, discount_amount DOUBLE PRECISION DEFAULT 0, discount_percent DOUBLE PRECISION DEFAULT 0, status TEXT DEFAULT 'active' ''',
 'invoice_items': '''id BIGSERIAL PRIMARY KEY, invoice_id BIGINT, product_id BIGINT, product_name TEXT, sku TEXT, quantity INTEGER, unit_price DOUBLE PRECISION, profit_per_unit DOUBLE PRECISION, returned INTEGER DEFAULT 0''',
 'payments': '''id BIGSERIAL PRIMARY KEY, invoice_id BIGINT NOT NULL, amount DOUBLE PRECISION NOT NULL, payment_date_jalali TEXT, payment_date_greg TEXT, description TEXT''',
@@ -73,6 +74,9 @@ def init_postgres_schema(url):
     try:
         with raw.cursor() as c:
             for table, ddl in TABLES.items(): c.execute(f'CREATE TABLE IF NOT EXISTS {table} ({ddl})')
+            c.execute('ALTER TABLE products ADD COLUMN IF NOT EXISTS price_updated_jalali TEXT')
+            c.execute('ALTER TABLE products ADD COLUMN IF NOT EXISTS last_edited_jalali TEXT')
+            c.execute('''CREATE TABLE IF NOT EXISTS product_price_history (id BIGSERIAL PRIMARY KEY, product_id BIGINT NOT NULL, product_name TEXT, field_name TEXT NOT NULL, old_price DOUBLE PRECISION, new_price DOUBLE PRECISION, changed_at_jalali TEXT NOT NULL)''')
         raw.commit()
     finally: raw.close()
 
@@ -119,7 +123,7 @@ def import_sqlite_to_postgres(path, url):
                 cols=rows[0].keys() if rows else [r[1] for r in sq.execute(f'PRAGMA table_info("{table}")')]
                 if rows:
                     q='INSERT INTO "'+table+'" ('+','.join('"'+x+'"' for x in cols)+') VALUES ('+','.join(['%s']*len(cols))+')'
-                    c.executemany(q,[tuple(r[x] for x in cols) for r in rows])
+                    c.executemany(q,[tuple((bool(r[x]) if table == 'users' and x == 'is_active' and r[x] is not None else r[x]) for x in cols) for r in rows])
                 if 'id' in cols: c.execute("SELECT setval(pg_get_serial_sequence(%s,'id'), COALESCE((SELECT MAX(id) FROM \""+table+"\"),1), true)",(table,))
         raw.commit()
     except: raw.rollback(); raise
